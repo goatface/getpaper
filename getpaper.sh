@@ -35,7 +35,7 @@ InitVariables () {
 }
 
 Usage () {
-	printf "getpaper version 0.4\nDownload, bibtex, print, and/or open papers based on reference!\n"
+	printf "getpaper version 0.5\nDownload, bibtex, print, and/or open papers based on reference!\n"
 	printf "Copyright 2010 daid - www.goatface.org\n"
 	printf "Usage: %s: [-f file] [-j journal] [-v volume] [-p page] [-P] [-O]\n" $0
 	printf "Description of options:\n"
@@ -44,11 +44,12 @@ Usage () {
 	printf "\t\t\tExample:\n\t\t\t\tprl\t99\t052502\t12C+alpha 16N RIB\n"
 	printf "\t\t\t(Comments are used in the bibtex for the user's need.)\n"
 	printf "  -j <string>\t: <string> is the journal title abbreviation\n"
+	printf "  -j help\t: Output a list of available journals and abbreviations.\n"
 	printf "  -v <int>\t: <int> is the journal volume number\n"
 	printf "  -p <int>\t: <int> is the article first page\n"
 	printf "  -P \t\t: Turn on printing\n"
 	printf "  -O \t\t: Open the paper(s) for digital viewing\n"
-	printf "(Note: -f option supercedes the -j -v -p options.)\n"
+	printf "(Note: -f option supersedes the -j -v -p options.)\n"
 	exit 1
 }
 
@@ -67,6 +68,22 @@ Error () { # keep track of any failures
 	printf "$JOURNAL\t$VOLUME\t$PAGE\n" >> $ERRORFILE
 }
 
+JournalList() {
+	printf "Journals in database:\nCODE\tNAME\n"
+	printf "aa\tAstronomy & Astrophysics\n"
+	printf "aipc\tAmerican Institute of Physics (Conference Proceedings)\n"
+	printf "apj\tThe Astrophysical Journal\n"
+	printf "apjl\tThe Astrophysical Journal (Letters)\n"
+	printf "apjs\tThe Astrophysical Journal (Supplement Series)\n"
+	printf "mnras\tMonthly Notices of the Royal Astronomical Society\n"
+	printf "nimpa\tNuclear Instruments and Methods (1983 and earlier)\n"
+	printf "nimpa\tNuclear Instruments and Methods in Physics Research A\n"
+	printf "nimpb\tNuclear Instruments and Methods in Physics Research B\n"
+	printf "nupha\tNuclear Physics A\n"
+	printf "prc\tPhysical Review C\n"
+	printf "prl\tPhysical Review Letters\n"
+}
+
 SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be sure to understand and test the meaning of the variables
 	# varibales used:
 	# 		JCODE : ADS journal code (case insensitive); see http://adsabs.harvard.edu/abs_doc/journal_abbr.html but be careful with things like "A&A"
@@ -74,7 +91,7 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	# 		LOCALHTML : presently used for ScienceDirect page style -- bad variable name
 	case "$JOURNAL" in
 	aa  | AA )
-		LOCALHTML=0
+		LOCALHTML=1
 		JCODE="a%26a"
 		LTYPE="ARTICLE"
 		;;
@@ -95,9 +112,24 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 		LTYPE="ARTICLE"
 		;;
 	mnras | MNRAS )
-		LOCALHTML=0
+		LOCALHTML=1
 		JCODE="mnras"
 		LTYPE="ARTICLE"
+		;;
+	nim | nucim | NIM | NucIM) 
+		LOCALHTML=0
+		JCODE="nucim"
+		LTYPE="EJOURNAL"
+		;;
+	nimpa | nima | NIMPA | NIMA) 
+		LOCALHTML=0
+		JCODE="nimpa"
+		LTYPE="EJOURNAL"
+		;;
+	nimpb | nimb | NIMPB | NIMB) 
+		LOCALHTML=0
+		JCODE="nimpb"
+		LTYPE="EJOURNAL"
 		;;
 	nupha | npa | NPA | nucphysa ) 
 		LOCALHTML=0
@@ -115,10 +147,12 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	* ) 
 	        printf "ERROR: Journal code $JOURNAL not in database, skipping...\n"
 		Error
+		JournalList
 		continue
 		;;
 	esac
 }
+
 
 TmpCleanUp () {
 	#tmp cleanup
@@ -175,7 +209,14 @@ FetchBibtex() { # USING ADS TO GET THE BIBTEX
 	ADSURL="http://adsabs.harvard.edu/cgi-bin/nph-abs_connect?version=1&warnings=YES&partial_bibcd=YES&sort=BIBCODE&db_key=ALL&bibstem=$JCODE&volume=$VOLUME&page=$PAGE&nr_to_return=1&start_nr=1"
 	lynx -source "$ADSURL" > $TMPBIBCODE
 	BIBCODE=`grep bibcode= $TMPBIBCODE | head -n 1 | sed 's/.*bibcode=//'|sed 's/&.*//'`
-	printf "BIBCODE is $BIBCODE\n"
+	if [ -z $BIBCODE ];then
+		printf "No BIBCODE could be found!\n"
+		Error
+		continue
+	else
+		printf "BIBCODE is $BIBCODE\n"
+	fi
+	
 	YEAR=`echo "$BIBCODE" | head -c 4`
 	if ( grep "$BIBCODE" "$BIBFILE" > /dev/null ); then
 		echo "The article $BIBCODE is already in your library!"
@@ -330,6 +371,10 @@ else
 	if [ "$jflag" ] ; then
 	# journal name flag
 		JOURNAL="$jval"
+		if [ $jval == "list" ] || [ $jval == "help" ];then
+			JournalList
+			exit 1
+		fi
 	else
 		printf "No journal given!\nSkipping...\n"
 		Error
