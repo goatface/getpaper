@@ -1,4 +1,5 @@
 #!/bin/bash
+# getpaper v 0.6
 # Copyright 2010 daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -19,7 +20,7 @@ InitVariables () {
 	# USER DEFINED VARIABLES
 	PDFVIEWER=/usr/bin/xpdf
 	PRINTCOMMAND="/usr/bin/lpr -P CNS205 -o Duplex=DuplexNoTumble"
-	LIBPATH=/home/`whoami`/librarytest
+	LIBPATH=/home/`whoami`/library
 	BIBFILE=$LIBPATH/library.bib
 	TMP=/tmp
 	# INTERNAL TEMPORARY FILES -- MAY CHANGE BUT NOT NECESSARY
@@ -35,7 +36,7 @@ InitVariables () {
 }
 
 Usage () {
-	printf "getpaper version 0.5\nDownload, bibtex, print, and/or open papers based on reference!\n"
+	printf "getpaper version 0.6\nDownload, bibtex, print, and/or open papers based on reference!\n"
 	printf "Copyright 2010 daid - www.goatface.org\n"
 	printf "Usage: %s: [-f file] [-j journal] [-v volume] [-p page] [-P] [-O]\n" $0
 	printf "Description of options:\n"
@@ -82,6 +83,7 @@ JournalList() {
 	printf "nupha\tNuclear Physics A\n"
 	printf "prc\tPhysical Review C\n"
 	printf "prl\tPhysical Review Letters\n"
+	printf "science\tScience\n"
 }
 
 SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be sure to understand and test the meaning of the variables
@@ -143,6 +145,11 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	prl | phrvl | PRL )   LOCALHTML=1
 		JCODE="phrvl"
 		LTYPE="EJOURNAL"
+		;;
+	science | SCIENCE )
+		LOCALHTML=1
+		JCODE="science"
+		LTYPE="ARTICLE"
 		;;
 	* ) 
 	        printf "ERROR: Journal code $JOURNAL not in database, skipping...\n"
@@ -278,7 +285,7 @@ AddBibtex () {
 	do
 		if ( echo $line | grep "doi = " > /dev/null );then
 			printf "$line\n" >> "$BIBFILE"
-			printf "file = {:$FILENAME:PDF},\n" >> "$BIBFILE"
+			printf "file = {:$LIBPATH/$PAPERTYPE/$YEAR/$FILENAME:PDF},\n" >> "$BIBFILE"
 		        printf "comment = {$COMMENTS},\n" >> "$BIBFILE"				    
 		else
 			#printf "$line\n" >> "$BIBFILE" # maybe gives errors if % is parsed
