@@ -1,5 +1,5 @@
 #!/bin/bash
-# getpaper v 0.6
+# getpaper v 0.61
 # Copyright 2010 daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -18,8 +18,8 @@
 # along with getpaper.  If not, see <http://www.gnu.org/licenses/>.
 InitVariables () {
 	# USER DEFINED VARIABLES
-	PDFVIEWER=/usr/bin/xpdf
-	PRINTCOMMAND="/usr/bin/lpr -P CNS205 -o Duplex=DuplexNoTumble"
+	PDFVIEWER=/usr/bin/xpdf # popular alternatives: /usr/bin/acroread /usr/bin/evince /usr/bin/okular
+	PRINTCOMMAND="/usr/bin/lpr -P CNS205 -o Duplex=DuplexNoTumble" # you can attempt to simply replace CNS205 with your printer name
 	LIBPATH=/home/`whoami`/library
 	BIBFILE=$LIBPATH/library.bib
 	TMP=/tmp
