@@ -1,5 +1,5 @@
 #!/bin/bash
-# getpaper v 0.61
+# getpaper v 0.70
 # Copyright 2010 daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -51,6 +51,7 @@ Usage () {
 	printf "  -P \t\t: Turn on printing\n"
 	printf "  -O \t\t: Open the paper(s) for digital viewing\n"
 	printf "(Note: -f option supersedes the -j -v -p options.)\n"
+	printf "\nIf zenity is installed, getpaper will enter GUI mode if no options are passed\n"
 	exit 1
 }
 
@@ -277,7 +278,12 @@ DownloadPdf () {
 		FULLPATH="$BASEURL$LOCALPDF"
 	fi
 	printf "Downloading PDF from $FULLPATH...\n"
-	wget -U 'Mozilla/5.0' "$FULLPATH" -O"$TMP/$FILENAME" # we need to mask as Firefox or wget is denied access by error 403 sometimes
+	# we need to mask as Firefox or wget is denied access by error 403 sometimes
+	if [ $GUI -eq 1 ];then
+		wget -U 'Mozilla/5.0' --progress=bar:force "$FULLPATH" -O"$TMP/$FILENAME" 2>&1 | (zenity --title "getpaper" --text "Downloading..." --progress --pulsate --auto-close --auto-kill)
+	else
+		wget -U 'Mozilla/5.0' "$FULLPATH" -O"$TMP/$FILENAME"
+	fi
 }
 
 AddBibtex () {
@@ -334,6 +340,40 @@ IsPdfValid () { # check if we downloaded a basically valid PDF
 	fi
 }
 
+GUI () {
+
+jval=$(zenity  --title "getpaper" --list  --text "Choose a journal" --radiolist  --column "" --column "Code" --column "Publication Title"  \
+	FALSE aa "Astronomy & Astrophysics" \
+	FALSE aipc "American Institute of Physics (Conference Proceedings)" \
+	FALSE apj "The Astrophysical Journal" \
+	FALSE apjl "The Astrophysical Journal (Letters)" \
+	FALSE apjs "The Astrophysical Journal (Supplement Series)" \
+	FALSE mnras "Monthly Notices of the Royal Astronomical Society" \
+	FALSE nimpa "Nuclear Instruments and Methods (1983 and earlier)" \
+	FALSE nimpa "Nuclear Instruments and Methods in Physics Research A" \
+	FALSE nimpb "Nuclear Instruments and Methods in Physics Research B" \
+	FALSE nupha "Nuclear Physics A" \
+	FALSE prc "Physical Review C" \
+	FALSE prl "Physical Review Letters" \
+	FALSE science "Science" \
+)
+if [ ! -z $jval ];then
+	jflag=1
+fi
+
+vval=$(zenity --entry --title "getpaper" --text "Volume:")
+if [ ! -z $vval ];then
+	vflag=1
+fi
+
+pval=$(zenity --entry --title "getpaper" --text "Page:")
+if [ ! -z $pval ];then
+	pflag=1
+fi
+
+}
+
+
 
 
 CheckDeps
@@ -364,7 +404,10 @@ do
     esac
 done
 if [ -z $1 ];then
-	Usage
+	type -P zenity &>/dev/null || { Usage; }
+	GUI=1
+	GUI
+
 fi
 # FLAG SETTING FOR INPUT
 if [ "$fflag" ]; then
@@ -422,6 +465,17 @@ do
 	mv -v "$TMP/$FILENAME" "$FILEPATH/$FILENAME"
 
 	AddBibtex
+
+	if [ $GUI -eq 1 ];then
+		ans=$(zenity  --list  --title "getpaper" --text "Finished!" --checklist  --column "" --column "Do you want to:" FALSE "Open the pdf" FALSE "Print the pdf" --separator=":"); echo $ans
+	fi
+
+	if (echo $ans | grep "Open" > /dev/null);then
+		Oflag=1
+	fi
+	if (echo $ans | grep "Print" /dev/null);then
+		Pflag=1
+	fi
 
 	if [ "$Oflag" ]; then
 		Open
