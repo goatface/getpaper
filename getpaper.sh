@@ -1,5 +1,5 @@
 #!/bin/bash
-# getpaper v 0.70
+# getpaper v 0.80
 # Copyright 2010 daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -26,6 +26,7 @@ InitVariables () {
 	# INTERNAL TEMPORARY FILES -- MAY CHANGE BUT NOT NECESSARY
 	TMPBIBCODE=$TMP/.getpaper_bibcode
 	TMPBIBTEX=$TMP/.getpaper_bibtex
+	TMPBIBCODELIST=$TMP/.getpaper_bibcodelist
 	TMPURL=$TMP/.getpaper_url
 	ERRORFILE=$TMP/.getpaper_error
 	# temporary storage for input information...whereever you want
@@ -36,7 +37,7 @@ InitVariables () {
 }
 
 Usage () {
-	printf "getpaper version 0.6\nDownload, bibtex, print, and/or open papers based on reference!\n"
+	printf "getpaper version 0.8\nDownload, bibtex, print, and/or open papers based on reference!\n"
 	printf "Copyright 2010 daid - www.goatface.org\n"
 	printf "Usage: %s: [-f file] [-j journal] [-v volume] [-p page] [-P] [-O]\n" $0
 	printf "Description of options:\n"
@@ -170,6 +171,9 @@ TmpCleanUp () {
 	if [ -e $TMPBIBCODE ];then
 		rm "$TMPBIBCODE"
 	fi
+	if [ -e $TMPBIBCODELIST ];then
+		rm "$TMPBIBCODELIST"
+	fi
 	if [ -e $TMPBIBTEX ];then
 		rm "$TMPBIBTEX"
 	fi
@@ -216,15 +220,67 @@ FetchBibtex() { # USING ADS TO GET THE BIBTEX
 	fi
 	ADSURL="http://adsabs.harvard.edu/cgi-bin/nph-abs_connect?version=1&warnings=YES&partial_bibcd=YES&sort=BIBCODE&db_key=ALL&bibstem=$JCODE&volume=$VOLUME&page=$PAGE&nr_to_return=1&start_nr=1"
 	lynx -source "$ADSURL" > $TMPBIBCODE
-	BIBCODE=`grep bibcode= $TMPBIBCODE | head -n 1 | sed 's/.*bibcode=//'|sed 's/&.*//'`
+	if ( grep -q "Total number selected" $TMPBIBCODE ); then
+		#format looks like:
+		#Total number selected: <strong>2</strong>
+		SELECTED=`grep "Total number selected" $TMPBIBCODE | sed 's/.*selected://' | sed 's/\ <strong>//' | sed 's$</strong>.*$$'`
+		echo "Found $SELECTED entries that match query..."
+	else
+		SELECTED=1
+	fi
+	i="1"
+	while [ $i -le $SELECTED  ]
+	do
+		ADSURL="http://adsabs.harvard.edu/cgi-bin/nph-abs_connect?version=1&warnings=YES&partial_bibcd=YES&sort=BIBCODE&db_key=ALL&bibstem=$JCODE&volume=$VOLUME&page=$PAGE&nr_to_return=1&start_nr=$i"
+		lynx -source "$ADSURL" > $TMPBIBCODE
+		BIBCODE=`grep bibcode= $TMPBIBCODE | head -n 1 | sed 's/.*bibcode=//'|sed 's/&.*//'`
+		if [ -z $BIBCODE ];then
+			printf "No BIBCODE could be found!\n"
+			Error
+			continue
+		else
+			printf "BIBCODE is $BIBCODE\n"
+		fi
+		ADSBIBTEX="http://adsabs.harvard.edu/cgi-bin/nph-bib_query?bibcode=$BIBCODE&data_type=BIBTEXPLUS&db_key=ALL&nocookieset=1"
+		printf "Fetching bibtex file from ADS ($ADSBIBTEX)\n"
+		lynx -source "$ADSBIBTEX" | awk 'NR>5' >$TMPBIBTEX
+		TITLE=$(grep "title = " $TMPBIBTEX | sed 's/\ \ \ \ title\ =\ \"{/\"/' | sed 's/}\",/\"/')
+		echo "$BIBCODE $TITLE" >> $TMPBIBCODELIST
+		i=$[$i+1]
+	done
+	if [ $SELECTED -gt 1 ];then
+		if [ $GUI -eq 1 ];then
+		# this zenity call looks strange because we need it to properly interpret the different single values
+			ZENCMD='zenity  --title "getpaper" --list  --text "Multiple hits.  Choose the paper you want:" --radiolist  --column "" --column "Key" --column "Paper Title"'
+			ZENARG=""
+			while read line
+			do
+				p1=`echo $line | awk '{print $1 }'`
+				p2=`echo $line | awk '{$1="";print}' | sed 's/\ //'`
+				ZENARG="$ZENARG FALSE $p1 $p2"
+			done < $TMPBIBCODELIST
+			ZENCMD="$ZENCMD $ZENARG"
+			BIBCODE=`echo $ZENCMD | bash`
+		else
+			echo "Multiple hits.  Choose the paper you want:"
+			i=1
+			while read line
+			do
+				echo "$i) $line"
+				i=$[$i+1]
+			done < $TMPBIBCODELIST
+			echo "Select paper number to download:"
+			read CHOICE <&3 # reading from the stdin redirect defined
+			BIBCODE=`cat $TMPBIBCODELIST | awk 'NR==v1' v1=$CHOICE | awk '{printf $1}'`
+		fi
+	fi
+	echo "Processing $BIBCODE..."
+
 	if [ -z $BIBCODE ];then
 		printf "No BIBCODE could be found!\n"
 		Error
 		continue
-	else
-		printf "BIBCODE is $BIBCODE\n"
 	fi
-	
 	YEAR=`echo "$BIBCODE" | head -c 4`
 	if ( grep "$BIBCODE" "$BIBFILE" > /dev/null ); then
 		echo "The article $BIBCODE is already in your library!"
@@ -232,9 +288,6 @@ FetchBibtex() { # USING ADS TO GET THE BIBTEX
 		echo "Skipping..."
 		continue
 	fi
-	ADSBIBTEX="http://adsabs.harvard.edu/cgi-bin/nph-bib_query?bibcode=$BIBCODE&data_type=BIBTEXPLUS&db_key=ALL&nocookieset=1"
-	printf "Fetching bibtex file from ADS ($ADSBIBTEX)\n"
-	lynx -source "$ADSBIBTEX" | awk 'NR>5' >$TMPBIBTEX
 	
 	# may add more papertypes here
 	if ( grep ARTICLE $TMPBIBTEX > /dev/null );then
@@ -407,7 +460,8 @@ if [ -z $1 ];then
 	type -P zenity &>/dev/null || { Usage; }
 	GUI=1
 	GUI
-
+else
+	GUI=0
 fi
 # FLAG SETTING FOR INPUT
 if [ "$fflag" ]; then
@@ -452,6 +506,7 @@ else
 fi
 
 # The main part of the script
+exec 3<&0 # stdin redirect for use in while read 
 while read inline
 do
 	ParseJVP
