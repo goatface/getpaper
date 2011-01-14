@@ -1,5 +1,5 @@
 #!/bin/bash
-# getpaper v 0.80
+# getpaper v 0.81
 # Copyright 2010 daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -21,7 +21,8 @@ InitVariables () {
 	PDFVIEWER=/usr/bin/xpdf # popular alternatives: /usr/bin/acroread /usr/bin/evince /usr/bin/okular
 	PRINTCOMMAND="/usr/bin/lpr -P CNS205 -o Duplex=DuplexNoTumble" # you can attempt to simply replace CNS205 with your printer name
 	LIBPATH=/home/`whoami`/library
-	BIBFILE=$LIBPATH/library.bib
+	BIBFILE=$LIBPATH/cameron.bib
+	#BIBFILE=$LIBPATH/library.bib
 	TMP=/tmp
 	# INTERNAL TEMPORARY FILES -- MAY CHANGE BUT NOT NECESSARY
 	TMPBIBCODE=$TMP/.getpaper_bibcode
@@ -37,7 +38,7 @@ InitVariables () {
 }
 
 Usage () {
-	printf "getpaper version 0.8\nDownload, bibtex, print, and/or open papers based on reference!\n"
+	printf "getpaper version 0.81\nDownload, bibtex, print, and/or open papers based on reference!\n"
 	printf "Copyright 2010 daid - www.goatface.org\n"
 	printf "Usage: %s: [-f file] [-j journal] [-v volume] [-p page] [-P] [-O]\n" $0
 	printf "Description of options:\n"
@@ -75,17 +76,31 @@ JournalList() {
 	printf "Journals in database:\nCODE\tNAME\n"
 	printf "aa\tAstronomy & Astrophysics\n"
 	printf "aipc\tAmerican Institute of Physics (Conference Proceedings)\n"
+	printf "aj\tThe Astronomical Journal\n"
+	printf "anap\tAnnales d'Astrophysique\n"
 	printf "apj\tThe Astrophysical Journal\n"
 	printf "apjl\tThe Astrophysical Journal (Letters)\n"
 	printf "apjs\tThe Astrophysical Journal (Supplement Series)\n"
+	printf "aujph\tAustralian Journal of Physics\n"
+	printf "bsrsl\tBulletin de la Societe Royale des Sciences de Liege\n"
 	printf "mnras\tMonthly Notices of the Royal Astronomical Society\n"
+	printf "msrsl\tMemoires of the Societe Royale des Sciences de Liege\n"
 	printf "nimpa\tNuclear Instruments and Methods (1983 and earlier)\n"
 	printf "nimpa\tNuclear Instruments and Methods in Physics Research A\n"
 	printf "nimpb\tNuclear Instruments and Methods in Physics Research B\n"
 	printf "nupha\tNuclear Physics A\n"
+	printf "paphs\tProceedings of the American Philosophical Society\n"
+	printf "phrv\tPhysical Review\n"
+	printf "pmag\tPhilosophical Magazine\n"
+	printf "ppsb\tProceedings of the Physical Society B\n"
 	printf "prc\tPhysical Review C\n"
+	printf "pasp\tPublications of the Astronomical Society of the Pacific\n"
 	printf "prl\tPhysical Review Letters\n"
+	printf "pthph\tProgress of Theoretical Physics\n"
+	printf "rvmp\tReviews of Modern Physics\n"
 	printf "science\tScience\n"
+	printf "scoa\tSmithsonian Contributions to Astrophysics\n"
+	printf "zphy\tZeitschrift fur Physik\n"
 }
 
 SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be sure to understand and test the meaning of the variables
@@ -103,6 +118,14 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 		JCODE="aipc"
 		LTYPE="EJOURNAL"
 		;;
+	aj |AJ )  LOCALHTML=1
+		JCODE="aj"
+		LTYPE="ARTICLE"
+		;;
+	anap |AnAp )  LOCALHTML=1
+		JCODE="anap"
+		LTYPE="ARTICLE"
+		;;
 	apj |APJ )  LOCALHTML=1
 		JCODE="apj"
 		LTYPE="ARTICLE"
@@ -115,10 +138,22 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 		JCODE="apjs"
 		LTYPE="ARTICLE"
 		;;
+	aujph | AuJPh )  LOCALHTML=1
+		JCODE="aujph"
+		LTYPE="ARTICLE"
+		;;
+	bsrsl | BSRSL  )   LOCALHTML=1
+		JCODE="bsrsl"
+		LTYPE="EJOURNAL"
+		;;
 	mnras | MNRAS )
 		LOCALHTML=1
 		JCODE="mnras"
 		LTYPE="ARTICLE"
+		;;
+	msrsl | MSRSL  )   LOCALHTML=1
+		JCODE="msrsl"
+		LTYPE="EJOURNAL"
 		;;
 	nim | nucim | NIM | NucIM) 
 		LOCALHTML=0
@@ -140,6 +175,26 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 		JCODE="nupha"
 		LTYPE="EJOURNAL"
 		;;
+	paphs | PAPhS | PAPHS )   LOCALHTML=1
+		JCODE="paphs"
+		LTYPE="EJOURNAL"
+		;;
+	pasp | PASP )   LOCALHTML=1
+		JCODE="pasp"
+		LTYPE="ARTICLE"
+		;;
+	phrv | pr | PhRv | PHRV )   LOCALHTML=1
+		JCODE="phrv"
+		LTYPE="EJOURNAL"
+		;;
+	pmag | PMag | PMAG )   LOCALHTML=1
+		JCODE="pmag"
+		LTYPE="EJOURNAL"
+		;;
+	ppsb | PPSB  )   LOCALHTML=1
+		JCODE="ppsb"
+		LTYPE="EJOURNAL"
+		;;
 	prc | phrvc | PRC )   LOCALHTML=1
 		JCODE="phrvc"
 		LTYPE="EJOURNAL"
@@ -148,10 +203,27 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 		JCODE="phrvl"
 		LTYPE="EJOURNAL"
 		;;
+	pthph | PThPh | PTHPH )   LOCALHTML=1
+		JCODE="pthph"
+		LTYPE="EJOURNAL"
+		;;
+	rvmp | RvMP | RVMP )
+		LOCALHTML=1
+		JCODE="rvmp"
+		LTYPE="EJOURNAL"
+		;;
 	science | SCIENCE )
 		LOCALHTML=1
 		JCODE="science"
 		LTYPE="ARTICLE"
+		;;
+	scoa | SCoA| SCOA )  LOCALHTML=1
+		JCODE="scoa"
+		LTYPE="ARTICLE"
+		;;
+	zphy | ZPhy| ZPHY )  LOCALHTML=1
+		JCODE="zphy"
+		LTYPE="EJOURNAL"
 		;;
 	* ) 
 	        printf "ERROR: Journal code $JOURNAL not in database, skipping...\n"
@@ -236,8 +308,7 @@ FetchBibtex() { # USING ADS TO GET THE BIBTEX
 		BIBCODE=`grep bibcode= $TMPBIBCODE | head -n 1 | sed 's/.*bibcode=//'|sed 's/&.*//'`
 		if [ -z $BIBCODE ];then
 			printf "No BIBCODE could be found!\n"
-			Error
-			continue
+			break
 		else
 			printf "BIBCODE is $BIBCODE\n"
 		fi
@@ -274,6 +345,7 @@ FetchBibtex() { # USING ADS TO GET THE BIBTEX
 			BIBCODE=`cat $TMPBIBCODELIST | awk 'NR==v1' v1=$CHOICE | awk '{printf $1}'`
 		fi
 	fi
+	rm $TMPBIBCODELIST
 	echo "Processing $BIBCODE..."
 
 	if [ -z $BIBCODE ];then
@@ -323,17 +395,18 @@ DownloadPdf () {
 		lynx -base -source -read_timeout=20 "$ADSLINK" >$TMPURL 
 		if [ $LOCALHTML -eq 1 ];then
 			BASEURL=`head -n 1 $TMPURL | sed 's/.*X-URL:\ //'|  sed 's,\(http://[^/]*\)/.*,\1,'`
-			LOCALPDF=`grep PDF $TMPURL |sed  's/.*href=\"//i' | sed 's/\".*//' | head -n 1`
+			LOCALPDF=`grep PDF $TMPURL | sed 's/href//2g' | sed  's/.*href=\"//i' | sed 's/\".*//' | head -n 1`
 		else
 			BASEURL=""
-			LOCALPDF=`grep PDF $TMPURL |sed  's/.*href=\"//i' | sed 's/\".*//' | grep "origin=search" | head -n 1`
+			LOCALPDF=`grep -i PDF $TMPURL | sed 's/href//2g' | sed  's/.*href=\"//i' | sed 's/\".*//' | grep "origin=search" | head -n 1`
 		fi
+		#cat $TMPURL; exit # debug new journal
 		FULLPATH="$BASEURL$LOCALPDF"
 	fi
 	printf "Downloading PDF from $FULLPATH...\n"
 	# we need to mask as Firefox or wget is denied access by error 403 sometimes
 	if [ $GUI -eq 1 ];then
-		wget -U 'Mozilla/5.0' --progress=bar:force "$FULLPATH" -O"$TMP/$FILENAME" 2>&1 | (zenity --title "getpaper" --text "Downloading..." --progress --pulsate --auto-close --auto-kill)
+		wget -U 'Mozilla/5.0' --progress=bar:force "$FULLPATH" -O"$TMP/$FILENAME" 2>&1 | (zenity --title "getpaper" --text "Downloading..." --progress --auto-close --auto-kill)
 	else
 		wget -U 'Mozilla/5.0' "$FULLPATH" -O"$TMP/$FILENAME"
 	fi
@@ -342,7 +415,7 @@ DownloadPdf () {
 AddBibtex () {
 	while read line
 	do
-		if ( echo $line | grep "doi = " > /dev/null );then
+		if ( echo $line | grep "adsurl = " > /dev/null );then
 			printf "$line\n" >> "$BIBFILE"
 			printf "file = {:$LIBPATH/$PAPERTYPE/$YEAR/$FILENAME:PDF},\n" >> "$BIBFILE"
 		        printf "comment = {$COMMENTS},\n" >> "$BIBFILE"				    
@@ -398,17 +471,31 @@ GUI () {
 jval=$(zenity  --title "getpaper" --list  --text "Choose a journal" --radiolist  --column "" --column "Code" --column "Publication Title"  \
 	FALSE aa "Astronomy & Astrophysics" \
 	FALSE aipc "American Institute of Physics (Conference Proceedings)" \
+	FALSE aj "The Astronomical Journal" \
+	FALSE anap "Annales d Astrophysique" \
 	FALSE apj "The Astrophysical Journal" \
 	FALSE apjl "The Astrophysical Journal (Letters)" \
 	FALSE apjs "The Astrophysical Journal (Supplement Series)" \
+	FALSE aujph "Australian Journal of Physics" \
+	FALSE bsrsl "Bulletin de la Societe Royale des Sciences de Liege" \
 	FALSE mnras "Monthly Notices of the Royal Astronomical Society" \
+	FALSE msrsl "Memoires of the Societe Royale des Sciences de Liege" \
 	FALSE nimpa "Nuclear Instruments and Methods (1983 and earlier)" \
 	FALSE nimpa "Nuclear Instruments and Methods in Physics Research A" \
 	FALSE nimpb "Nuclear Instruments and Methods in Physics Research B" \
 	FALSE nupha "Nuclear Physics A" \
+	FALSE paphs "Proceedings of the American Philosophical Society" \
+	FALSE pasp "Publications of the Astronomical Society of the Pacific" \
+	FALSE phrv "Physical Review" \
+	FALSE pmag "Philosophical Magazine" \
+	FALSE ppsb "Proceedings of the Physical Society B" \
 	FALSE prc "Physical Review C" \
 	FALSE prl "Physical Review Letters" \
+	FALSE pthph "Progress of Theoretical Physics" \
+	FALSE rvmp "Reviews of Modern Physics" \
 	FALSE science "Science" \
+	FALSE scoa "Smithsonian Contributions to Astrophysics" \
+	FALSE zphy "Zeitschrift fur Physik" \
 )
 if [ ! -z $jval ];then
 	jflag=1
