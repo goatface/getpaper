@@ -1,5 +1,5 @@
 #!/bin/bash
-# getpaper v 0.82
+# getpaper v 0.83
 # Copyright 2010 daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -23,6 +23,7 @@ InitVariables () {
 	PRINTCOMMAND="/usr/bin/lpr -P CNS205 -o Duplex=DuplexNoTumble" # you can attempt to simply replace CNS205 with your printer name
 	LIBPATH=/home/`whoami`/library
 	#LIBPATH=/Users/`whoami`/Documents/library # Mac OS
+	#BIBFILE=$LIBPATH/cameron.bib
 	BIBFILE=$LIBPATH/library.bib
 	TMP=/tmp
 	# INTERNAL TEMPORARY FILES -- MAY CHANGE BUT NOT NECESSARY
@@ -39,7 +40,7 @@ InitVariables () {
 }
 
 Usage () {
-	printf "getpaper version 0.82\nDownload, bibtex, print, and/or open papers based on reference!\n"
+	printf "getpaper version 0.83\nDownload, bibtex, print, and/or open papers based on reference!\n"
 	printf "Copyright 2010 daid - www.goatface.org\n"
 	printf "Usage: %s: [-f file] [-j journal] [-v volume] [-p page] [-P] [-O]\n" $0
 	printf "Description of options:\n"
@@ -493,7 +494,7 @@ IsPdfValid () { # check if we downloaded a basically valid PDF
 
 GUI () {
 
-jval=$(zenity  --title "getpaper" --list  --text "Choose a journal" --radiolist  --column "" --column "Code" --column "Publication Title"  \
+jval=$(zenity  --width=400  --height=630 --title "getpaper" --list  --text "Choose a journal" --radiolist  --column "" --column "Code" --column "Publication Title"  \
 	FALSE aa "Astronomy & Astrophysics" \
 	FALSE aipc "American Institute of Physics (Conference Proceedings)" \
 	FALSE aj "The Astronomical Journal" \
