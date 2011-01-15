@@ -1,5 +1,5 @@
 #!/bin/bash
-# getpaper v 0.81
+# getpaper v 0.82
 # Copyright 2010 daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -19,10 +19,11 @@
 InitVariables () {
 	# USER DEFINED VARIABLES
 	PDFVIEWER=/usr/bin/xpdf # popular alternatives: /usr/bin/acroread /usr/bin/evince /usr/bin/okular
+	#PDFVIEWER=/usr/bin/open # Mac OS
 	PRINTCOMMAND="/usr/bin/lpr -P CNS205 -o Duplex=DuplexNoTumble" # you can attempt to simply replace CNS205 with your printer name
 	LIBPATH=/home/`whoami`/library
-	BIBFILE=$LIBPATH/cameron.bib
-	#BIBFILE=$LIBPATH/library.bib
+	#LIBPATH=/Users/`whoami`/Documents/library # Mac OS
+	BIBFILE=$LIBPATH/library.bib
 	TMP=/tmp
 	# INTERNAL TEMPORARY FILES -- MAY CHANGE BUT NOT NECESSARY
 	TMPBIBCODE=$TMP/.getpaper_bibcode
@@ -38,7 +39,7 @@ InitVariables () {
 }
 
 Usage () {
-	printf "getpaper version 0.81\nDownload, bibtex, print, and/or open papers based on reference!\n"
+	printf "getpaper version 0.82\nDownload, bibtex, print, and/or open papers based on reference!\n"
 	printf "Copyright 2010 daid - www.goatface.org\n"
 	printf "Usage: %s: [-f file] [-j journal] [-v volume] [-p page] [-P] [-O]\n" $0
 	printf "Description of options:\n"
@@ -77,7 +78,7 @@ JournalList() {
 	printf "aa\tAstronomy & Astrophysics\n"
 	printf "aipc\tAmerican Institute of Physics (Conference Proceedings)\n"
 	printf "aj\tThe Astronomical Journal\n"
-	printf "anap\tAnnales d'Astrophysique\n"
+	printf "anap\tAnnales d'Astrophysique\n" # none of these are online vi ADS
 	printf "apj\tThe Astrophysical Journal\n"
 	printf "apjl\tThe Astrophysical Journal (Letters)\n"
 	printf "apjs\tThe Astrophysical Journal (Supplement Series)\n"
@@ -89,7 +90,7 @@ JournalList() {
 	printf "nimpa\tNuclear Instruments and Methods in Physics Research A\n"
 	printf "nimpb\tNuclear Instruments and Methods in Physics Research B\n"
 	printf "nupha\tNuclear Physics A\n"
-	printf "paphs\tProceedings of the American Philosophical Society\n"
+	printf "paphs\tProceedings of the American Philosophical Society\n" # none online via ADS
 	printf "phrv\tPhysical Review\n"
 	printf "pmag\tPhilosophical Magazine\n"
 	printf "ppsb\tProceedings of the Physical Society B\n"
@@ -107,121 +108,124 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	# varibales used:
 	# 		JCODE : ADS journal code (case insensitive); see http://adsabs.harvard.edu/abs_doc/journal_abbr.html but be careful with things like "A&A"
 	#		LTYPE : ADS system variable; EJOURNAL is externally hosted; ARTICLE is locally hosted
-	# 		LOCALHTML : presently used for ScienceDirect page style -- bad variable name
+	# 		HREFTYPE : Specifies locality of the href
+	#				0 : full paths given for href
+	#				1 : domain absent from href
+	#				2 : local file name given for href
 	case "$JOURNAL" in
 	aa  | AA )
-		LOCALHTML=1
+		HREFTYPE=1
 		JCODE="a%26a"
 		LTYPE="ARTICLE"
 		;;
-	aipc | AIPC )  LOCALHTML=1
+	aipc | AIPC )  HREFTYPE=1
 		JCODE="aipc"
 		LTYPE="EJOURNAL"
 		;;
-	aj |AJ )  LOCALHTML=1
+	aj |AJ )  HREFTYPE=1
 		JCODE="aj"
 		LTYPE="ARTICLE"
 		;;
-	anap |AnAp )  LOCALHTML=1
+	anap |AnAp )  HREFTYPE=1
 		JCODE="anap"
 		LTYPE="ARTICLE"
 		;;
-	apj |APJ )  LOCALHTML=1
+	apj |APJ )  HREFTYPE=1
 		JCODE="apj"
 		LTYPE="ARTICLE"
 		;;
-	apjl | APJL )  LOCALHTML=1
+	apjl | APJL )  HREFTYPE=1
 		JCODE="apjl"
 		LTYPE="ARTICLE"
 		;;
-	apjs | APJS )  LOCALHTML=1
+	apjs | APJS )  HREFTYPE=1
 		JCODE="apjs"
 		LTYPE="ARTICLE"
 		;;
-	aujph | AuJPh )  LOCALHTML=1
+	aujph | AuJPh )  HREFTYPE=1
 		JCODE="aujph"
 		LTYPE="ARTICLE"
 		;;
-	bsrsl | BSRSL  )   LOCALHTML=1
+	bsrsl | BSRSL  )   HREFTYPE=2
 		JCODE="bsrsl"
 		LTYPE="EJOURNAL"
 		;;
 	mnras | MNRAS )
-		LOCALHTML=1
+		HREFTYPE=1
 		JCODE="mnras"
 		LTYPE="ARTICLE"
 		;;
-	msrsl | MSRSL  )   LOCALHTML=1
+	msrsl | MSRSL  )   HREFTYPE=1
 		JCODE="msrsl"
-		LTYPE="EJOURNAL"
+		LTYPE="ARTICLE"
 		;;
 	nim | nucim | NIM | NucIM) 
-		LOCALHTML=0
+		HREFTYPE=0
 		JCODE="nucim"
 		LTYPE="EJOURNAL"
 		;;
 	nimpa | nima | NIMPA | NIMA) 
-		LOCALHTML=0
+		HREFTYPE=0
 		JCODE="nimpa"
 		LTYPE="EJOURNAL"
 		;;
 	nimpb | nimb | NIMPB | NIMB) 
-		LOCALHTML=0
+		HREFTYPE=0
 		JCODE="nimpb"
 		LTYPE="EJOURNAL"
 		;;
 	nupha | npa | NPA | nucphysa ) 
-		LOCALHTML=0
+		HREFTYPE=0
 		JCODE="nupha"
 		LTYPE="EJOURNAL"
 		;;
-	paphs | PAPhS | PAPHS )   LOCALHTML=1
+	paphs | PAPhS | PAPHS )   HREFTYPE=1
 		JCODE="paphs"
 		LTYPE="EJOURNAL"
 		;;
-	pasp | PASP )   LOCALHTML=1
+	pasp | PASP )   HREFTYPE=1
 		JCODE="pasp"
 		LTYPE="ARTICLE"
 		;;
-	phrv | pr | PhRv | PHRV )   LOCALHTML=1
+	phrv | pr | PhRv | PHRV )   HREFTYPE=1
 		JCODE="phrv"
 		LTYPE="EJOURNAL"
 		;;
-	pmag | PMag | PMAG )   LOCALHTML=1
+	pmag | PMag | PMAG )   HREFTYPE=1
 		JCODE="pmag"
 		LTYPE="EJOURNAL"
 		;;
-	ppsb | PPSB  )   LOCALHTML=1
+	ppsb | PPSB  )   HREFTYPE=1
 		JCODE="ppsb"
 		LTYPE="EJOURNAL"
 		;;
-	prc | phrvc | PRC )   LOCALHTML=1
+	prc | phrvc | PRC )   HREFTYPE=1
 		JCODE="phrvc"
 		LTYPE="EJOURNAL"
 		;;
-	prl | phrvl | PRL )   LOCALHTML=1
+	prl | phrvl | PRL )   HREFTYPE=1
 		JCODE="phrvl"
 		LTYPE="EJOURNAL"
 		;;
-	pthph | PThPh | PTHPH )   LOCALHTML=1
+	pthph | PThPh | PTHPH )   HREFTYPE=1
 		JCODE="pthph"
 		LTYPE="EJOURNAL"
 		;;
 	rvmp | RvMP | RVMP )
-		LOCALHTML=1
+		HREFTYPE=1
 		JCODE="rvmp"
 		LTYPE="EJOURNAL"
 		;;
 	science | SCIENCE )
-		LOCALHTML=1
+		HREFTYPE=1
 		JCODE="science"
 		LTYPE="ARTICLE"
 		;;
-	scoa | SCoA| SCOA )  LOCALHTML=1
+	scoa | SCoA| SCOA )  HREFTYPE=1
 		JCODE="scoa"
 		LTYPE="ARTICLE"
 		;;
-	zphy | ZPhy| ZPHY )  LOCALHTML=1
+	zphy | ZPhy| ZPHY )  HREFTYPE=1
 		JCODE="zphy"
 		LTYPE="EJOURNAL"
 		;;
@@ -391,14 +395,35 @@ DownloadPdf () {
 	if [ $LTYPE = "ARTICLE" ]; then
 		FULLPATH=$ADSLINK
 	elif [ $LTYPE = "EJOURNAL" ]; then
-
-		lynx -base -source -read_timeout=20 "$ADSLINK" >$TMPURL 
-		if [ $LOCALHTML -eq 1 ];then
-			BASEURL=`head -n 1 $TMPURL | sed 's/.*X-URL:\ //'|  sed 's,\(http://[^/]*\)/.*,\1,'`
-			LOCALPDF=`grep PDF $TMPURL | sed 's/href//2g' | sed  's/.*href=\"//i' | sed 's/\".*//' | head -n 1`
-		else
+		if [ -e $TMPURL ];then
+			rm "$TMPURL"
+		fi
+		lynx -base -source -connect_timeout=20 "$ADSLINK" > $TMPURL 
+		#read_timeout is a newer feature many systems don't seem to have...added to lynx 2.8.7 2009.7.5
+		#lynx -base -source -read_timeout=20 "$ADSLINK" >$TMPURL 
+		if [ $HREFTYPE -eq 0 ];then
+			#full paths given for href
 			BASEURL=""
-			LOCALPDF=`grep -i PDF $TMPURL | sed 's/href//2g' | sed  's/.*href=\"//i' | sed 's/\".*//' | grep "origin=search" | head -n 1`
+			#2g in BSD sed gives: sed: more than one number or 'g' in substitute flags
+			#LOCALPDF=`grep PDF $TMPURL | sed 's/[Hh][Rr][Ee][Ff]//2g' | sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | head -n 1`
+			#emulate 2g as sed, where goat is regex: sed ':a;s/\([^ ]*goat.*[^\\]\)goat\(.*\)/\1replace\2/;ta'
+			LOCALPDF=`grep PDF $TMPURL | \ 
+				sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
+				sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | head -n 1`
+		fi
+		if [ $HREFTYPE -eq 1 ];then
+			#domain omitted for href
+			BASEURL=`head -n 1 $TMPURL | sed 's/.*X-URL:\ //'|  sed 's,\(http://[^/]*\)/.*,\1,'`
+			LOCALPDF=`grep PDF $TMPURL | \
+				sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
+				sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | head -n 1`
+		fi
+		if [ $HREFTYPE -eq 2 ];then
+			#totally local href
+			BASEURL=`head -n 1 $TMPURL | sed 's/.*X-URL:\ //'|  sed 's/\(.*\)\/.*/\1\//'`
+			LOCALPDF=`grep PDF $TMPURL | \
+				sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
+				sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | head -n 1`
 		fi
 		#cat $TMPURL; exit # debug new journal
 		FULLPATH="$BASEURL$LOCALPDF"
