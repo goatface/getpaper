@@ -1,5 +1,5 @@
 #!/bin/bash
-# getpaper v 0.84
+# getpaper v 0.85
 # Copyright 2010, 2011 daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -39,7 +39,7 @@ InitVariables () {
 }
 
 Usage () {
-	printf "getpaper version 0.84\nDownload, bibtex, print, and/or open papers based on reference!\n"
+	printf "getpaper version 0.85\nDownload, bibtex, print, and/or open papers based on reference!\n"
 	printf "Copyright 2010 daid - www.goatface.org\n"
 	printf "Usage: %s: [-f file] [-j journal] [-v volume] [-p page] [-P] [-O]\n" $0
 	printf "Description of options:\n"
@@ -364,12 +364,15 @@ DownloadPdf () {
 }
 
 AddBibtex () {
-	while read line
+	while read -r line
 	do
 		if ( echo $line | grep "adsurl = " > /dev/null );then
-			printf "$line\n" >> "$BIBFILE"
-			printf "file = {:$LIBPATH/$PAPERTYPE/$YEAR/$FILENAME:PDF},\n" >> "$BIBFILE"
-		        printf "comment = {$COMMENTS},\n" >> "$BIBFILE"				    
+			echo "$line" >> "$BIBFILE"
+			echo "file = {:$LIBPATH/$PAPERTYPE/$YEAR/$FILENAME:PDF}," >> "$BIBFILE"
+		        echo "comment = {$COMMENTS}," >> "$BIBFILE"				    
+			#printf "$line\n" >> "$BIBFILE"
+			#printf "file = {:$LIBPATH/$PAPERTYPE/$YEAR/$FILENAME:PDF},\n" >> "$BIBFILE"
+		        #printf "comment = {$COMMENTS},\n" >> "$BIBFILE"				    
 		else
 			#printf "$line\n" >> "$BIBFILE" # maybe gives errors if % is parsed
 			echo "$line" >> "$BIBFILE"
