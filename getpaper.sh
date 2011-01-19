@@ -1,6 +1,6 @@
 #!/bin/bash
-# getpaper v 0.83
-# Copyright 2010 daid kahl
+# getpaper v 0.84
+# Copyright 2010, 2011 daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
 #
@@ -23,7 +23,6 @@ InitVariables () {
 	PRINTCOMMAND="/usr/bin/lpr -P CNS205 -o Duplex=DuplexNoTumble" # you can attempt to simply replace CNS205 with your printer name
 	LIBPATH=/home/`whoami`/library
 	#LIBPATH=/Users/`whoami`/Documents/library # Mac OS
-	#BIBFILE=$LIBPATH/cameron.bib
 	BIBFILE=$LIBPATH/library.bib
 	TMP=/tmp
 	# INTERNAL TEMPORARY FILES -- MAY CHANGE BUT NOT NECESSARY
@@ -40,7 +39,7 @@ InitVariables () {
 }
 
 Usage () {
-	printf "getpaper version 0.83\nDownload, bibtex, print, and/or open papers based on reference!\n"
+	printf "getpaper version 0.84\nDownload, bibtex, print, and/or open papers based on reference!\n"
 	printf "Copyright 2010 daid - www.goatface.org\n"
 	printf "Usage: %s: [-f file] [-j journal] [-v volume] [-p page] [-P] [-O]\n" $0
 	printf "Description of options:\n"
@@ -91,11 +90,19 @@ JournalList() {
 	printf "nimpa\tNuclear Instruments and Methods in Physics Research A\n"
 	printf "nimpb\tNuclear Instruments and Methods in Physics Research B\n"
 	printf "nupha\tNuclear Physics A\n"
+	printf "nuphb\tNuclear Physics B\n"
+	printf "obs\tThe Observatory\n"
 	printf "paphs\tProceedings of the American Philosophical Society\n" # none online via ADS
+	printf "pce\tPhysics and Chemsitry of the Earth\n"
 	printf "phrv\tPhysical Review\n"
 	printf "pmag\tPhilosophical Magazine\n"
+	printf "ppsa\tProceedings of the Physical Society A\n"
 	printf "ppsb\tProceedings of the Physical Society B\n"
+	printf "pra\tPhysical Review A\n"
+	printf "prb\tPhysical Review B\n"
 	printf "prc\tPhysical Review C\n"
+	printf "prd\tPhysical Review D\n"
+	printf "pre\tPhysical Review E\n"
 	printf "pasp\tPublications of the Astronomical Society of the Pacific\n"
 	printf "prl\tPhysical Review Letters\n"
 	printf "pthph\tProgress of Theoretical Physics\n"
@@ -114,122 +121,41 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	#				1 : domain absent from href
 	#				2 : local file name given for href
 	case "$JOURNAL" in
-	aa  | AA )
-		HREFTYPE=1
-		JCODE="a%26a"
-		LTYPE="ARTICLE"
-		;;
-	aipc | AIPC )  HREFTYPE=1
-		JCODE="aipc"
-		LTYPE="EJOURNAL"
-		;;
-	aj |AJ )  HREFTYPE=1
-		JCODE="aj"
-		LTYPE="ARTICLE"
-		;;
-	anap |AnAp )  HREFTYPE=1
-		JCODE="anap"
-		LTYPE="ARTICLE"
-		;;
-	apj |APJ )  HREFTYPE=1
-		JCODE="apj"
-		LTYPE="ARTICLE"
-		;;
-	apjl | APJL )  HREFTYPE=1
-		JCODE="apjl"
-		LTYPE="ARTICLE"
-		;;
-	apjs | APJS )  HREFTYPE=1
-		JCODE="apjs"
-		LTYPE="ARTICLE"
-		;;
-	aujph | AuJPh )  HREFTYPE=1
-		JCODE="aujph"
-		LTYPE="ARTICLE"
-		;;
-	bsrsl | BSRSL  )   HREFTYPE=2
-		JCODE="bsrsl"
-		LTYPE="EJOURNAL"
-		;;
-	mnras | MNRAS )
-		HREFTYPE=1
-		JCODE="mnras"
-		LTYPE="ARTICLE"
-		;;
-	msrsl | MSRSL  )   HREFTYPE=1
-		JCODE="msrsl"
-		LTYPE="ARTICLE"
-		;;
-	nim | nucim | NIM | NucIM) 
-		HREFTYPE=0
-		JCODE="nucim"
-		LTYPE="EJOURNAL"
-		;;
-	nimpa | nima | NIMPA | NIMA) 
-		HREFTYPE=0
-		JCODE="nimpa"
-		LTYPE="EJOURNAL"
-		;;
-	nimpb | nimb | NIMPB | NIMB) 
-		HREFTYPE=0
-		JCODE="nimpb"
-		LTYPE="EJOURNAL"
-		;;
-	nupha | npa | NPA | nucphysa ) 
-		HREFTYPE=0
-		JCODE="nupha"
-		LTYPE="EJOURNAL"
-		;;
-	paphs | PAPhS | PAPHS )   HREFTYPE=1
-		JCODE="paphs"
-		LTYPE="EJOURNAL"
-		;;
-	pasp | PASP )   HREFTYPE=1
-		JCODE="pasp"
-		LTYPE="ARTICLE"
-		;;
-	phrv | pr | PhRv | PHRV )   HREFTYPE=1
-		JCODE="phrv"
-		LTYPE="EJOURNAL"
-		;;
-	pmag | PMag | PMAG )   HREFTYPE=1
-		JCODE="pmag"
-		LTYPE="EJOURNAL"
-		;;
-	ppsb | PPSB  )   HREFTYPE=1
-		JCODE="ppsb"
-		LTYPE="EJOURNAL"
-		;;
-	prc | phrvc | PRC )   HREFTYPE=1
-		JCODE="phrvc"
-		LTYPE="EJOURNAL"
-		;;
-	prl | phrvl | PRL )   HREFTYPE=1
-		JCODE="phrvl"
-		LTYPE="EJOURNAL"
-		;;
-	pthph | PThPh | PTHPH )   HREFTYPE=1
-		JCODE="pthph"
-		LTYPE="EJOURNAL"
-		;;
-	rvmp | RvMP | RVMP )
-		HREFTYPE=1
-		JCODE="rvmp"
-		LTYPE="EJOURNAL"
-		;;
-	science | SCIENCE )
-		HREFTYPE=1
-		JCODE="science"
-		LTYPE="ARTICLE"
-		;;
-	scoa | SCoA| SCOA )  HREFTYPE=1
-		JCODE="scoa"
-		LTYPE="ARTICLE"
-		;;
-	zphy | ZPhy| ZPHY )  HREFTYPE=1
-		JCODE="zphy"
-		LTYPE="EJOURNAL"
-		;;
+	aa  | AA ) HREFTYPE=1; JCODE="a%26a"; LTYPE="ARTICLE" ;;
+	aipc | AIPC )  HREFTYPE=1; JCODE="aipc"; LTYPE="EJOURNAL" ;;
+	aj |AJ )  HREFTYPE=1; JCODE="aj"; LTYPE="ARTICLE" ;;
+	anap |AnAp )  HREFTYPE=1; JCODE="anap"; LTYPE="ARTICLE" ;;
+	apj |APJ )  HREFTYPE=1; JCODE="apj"; LTYPE="ARTICLE" ;;
+	apjl | APJL )  HREFTYPE=1; JCODE="apjl"; LTYPE="ARTICLE" ;;
+	apjs | APJS )  HREFTYPE=1; JCODE="apjs"; LTYPE="ARTICLE" ;;
+	aujph | AuJPh )  HREFTYPE=1; JCODE="aujph"; LTYPE="ARTICLE" ;;
+	bsrsl | BSRSL  )   HREFTYPE=2; JCODE="bsrsl"; LTYPE="EJOURNAL" ;;
+	mnras | MNRAS ) HREFTYPE=1; JCODE="mnras"; LTYPE="ARTICLE" ;;
+	msrsl | MSRSL  )   HREFTYPE=1; JCODE="msrsl"; LTYPE="ARTICLE" ;;
+	nim | nucim | NIM | NucIM) HREFTYPE=0; JCODE="nucim"; LTYPE="EJOURNAL" ;;
+	nimpa | nima | NIMPA | NIMA) HREFTYPE=0; JCODE="nimpa"; LTYPE="EJOURNAL" ;;
+	nimpb | nimb | NIMPB | NIMB) HREFTYPE=0; JCODE="nimpb"; LTYPE="EJOURNAL" ;;
+	nupha | npa | NPA | nucphysa ) HREFTYPE=0; JCODE="nupha"; LTYPE="EJOURNAL" ;;
+	nuphb | npb | NPB | nucphysb ) HREFTYPE=0; JCODE="nuphb"; LTYPE="EJOURNAL" ;;
+	obs | OBS )  HREFTYPE=1; JCODE="obs"; LTYPE="ARTICLE" ;;
+	paphs | PAPhS | PAPHS )   HREFTYPE=1; JCODE="paphs"; LTYPE="EJOURNAL" ;;
+	pasp | PASP )   HREFTYPE=1; JCODE="pasp"; LTYPE="ARTICLE" ;;
+	pce | PCE ) HREFTYPE=0; JCODE="pce"; LTYPE="EJOURNAL" ;;
+	phrv | pr | PhRv | PHRV )   HREFTYPE=1; JCODE="phrv"; LTYPE="EJOURNAL" ;;
+	pmag | PMag | PMAG )   HREFTYPE=1; JCODE="pmag"; LTYPE="EJOURNAL" ;;
+	ppsa | PPSA  )   HREFTYPE=1; JCODE="ppsa"; LTYPE="EJOURNAL" ;;
+	ppsb | PPSB  )   HREFTYPE=1;JCODE="ppsb";LTYPE="EJOURNAL" ;;
+	pra | phrva | PRA )   HREFTYPE=1;JCODE="phrva";LTYPE="EJOURNAL" ;;
+	prb | phrvb | PRB )   HREFTYPE=1;JCODE="phrvb";LTYPE="EJOURNAL" ;;
+	prc | phrvc | PRC )   HREFTYPE=1;JCODE="phrvc";LTYPE="EJOURNAL" ;;
+	prd | phrvd | PRD )   HREFTYPE=1;JCODE="phrvd";LTYPE="EJOURNAL" ;;
+	pre | phrve | PRE )   HREFTYPE=1;JCODE="phrve";LTYPE="EJOURNAL" ;;
+	prl | phrvl | PRL )   HREFTYPE=1;JCODE="phrvl";LTYPE="EJOURNAL" ;;
+	pthph | PThPh | PTHPH )   HREFTYPE=1;JCODE="pthph";LTYPE="EJOURNAL" ;;
+	rvmp | RvMP | RVMP ) HREFTYPE=1;JCODE="rvmp";LTYPE="EJOURNAL" ;;
+	science | SCIENCE ) HREFTYPE=1;JCODE="science";LTYPE="ARTICLE" ;;
+	scoa | SCoA| SCOA )  HREFTYPE=1;JCODE="scoa";LTYPE="ARTICLE" ;;
+	zphy | ZPhy| ZPHY )  HREFTYPE=1;JCODE="zphy";LTYPE="EJOURNAL" ;;
 	* ) 
 	        printf "ERROR: Journal code $JOURNAL not in database, skipping...\n"
 		Error
@@ -404,13 +330,12 @@ DownloadPdf () {
 		#lynx -base -source -read_timeout=20 "$ADSLINK" >$TMPURL 
 		if [ $HREFTYPE -eq 0 ];then
 			#full paths given for href
+			# at present just for ScienceDirect (from the grep origin=search part)
 			BASEURL=""
 			#2g in BSD sed gives: sed: more than one number or 'g' in substitute flags
 			#LOCALPDF=`grep PDF $TMPURL | sed 's/[Hh][Rr][Ee][Ff]//2g' | sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | head -n 1`
 			#emulate 2g as sed, where goat is regex: sed ':a;s/\([^ ]*goat.*[^\\]\)goat\(.*\)/\1replace\2/;ta'
-			LOCALPDF=`grep PDF $TMPURL | \ 
-				sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
-				sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | head -n 1`
+			LOCALPDF=`grep PDF $TMPURL | sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | grep "origin=search" | head -n 1`
 		fi
 		if [ $HREFTYPE -eq 1 ];then
 			#domain omitted for href
@@ -426,7 +351,7 @@ DownloadPdf () {
 				sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
 				sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | head -n 1`
 		fi
-		#cat $TMPURL; exit # debug new journal
+		#cat $TMPURL |grep PDF | sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//    ' | grep "origin=search" |head -n 1 ;exit # debug new journal
 		FULLPATH="$BASEURL$LOCALPDF"
 	fi
 	printf "Downloading PDF from $FULLPATH...\n"
@@ -494,7 +419,7 @@ IsPdfValid () { # check if we downloaded a basically valid PDF
 
 GUI () {
 
-jval=$(zenity  --width=400  --height=630 --title "getpaper" --list  --text "Choose a journal" --radiolist  --column "" --column "Code" --column "Publication Title"  \
+jval=$(zenity  --width=400  --height=703 --title "getpaper" --list  --text "Choose a journal" --radiolist  --column "" --column "Code" --column "Publication Title"  \
 	FALSE aa "Astronomy & Astrophysics" \
 	FALSE aipc "American Institute of Physics (Conference Proceedings)" \
 	FALSE aj "The Astronomical Journal" \
@@ -510,12 +435,20 @@ jval=$(zenity  --width=400  --height=630 --title "getpaper" --list  --text "Choo
 	FALSE nimpa "Nuclear Instruments and Methods in Physics Research A" \
 	FALSE nimpb "Nuclear Instruments and Methods in Physics Research B" \
 	FALSE nupha "Nuclear Physics A" \
+	FALSE nuphb "Nuclear Physics B" \
+	FALSE obs "The Observatory" \
 	FALSE paphs "Proceedings of the American Philosophical Society" \
 	FALSE pasp "Publications of the Astronomical Society of the Pacific" \
 	FALSE phrv "Physical Review" \
+	FALSE pce "Physics and Chemistry of the Earth" \
 	FALSE pmag "Philosophical Magazine" \
+	FALSE ppsa "Proceedings of the Physical Society A" \
 	FALSE ppsb "Proceedings of the Physical Society B" \
+	FALSE pra "Physical Review A" \
+	FALSE prb "Physical Review B" \
 	FALSE prc "Physical Review C" \
+	FALSE prd "Physical Review D" \
+	FALSE pre "Physical Review E" \
 	FALSE prl "Physical Review Letters" \
 	FALSE pthph "Progress of Theoretical Physics" \
 	FALSE rvmp "Reviews of Modern Physics" \
