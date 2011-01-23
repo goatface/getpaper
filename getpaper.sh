@@ -1,5 +1,5 @@
 #!/bin/bash
-# getpaper v 0.85
+# getpaper v 0.86
 # Copyright 2010, 2011 daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -39,7 +39,7 @@ InitVariables () {
 }
 
 Usage () {
-	printf "getpaper version 0.85\nDownload, bibtex, print, and/or open papers based on reference!\n"
+	printf "getpaper version 0.86\nDownload, bibtex, print, and/or open papers based on reference!\n"
 	printf "Copyright 2010 daid - www.goatface.org\n"
 	printf "Usage: %s: [-f file] [-j journal] [-v volume] [-p page] [-P] [-O]\n" $0
 	printf "Description of options:\n"
@@ -84,9 +84,11 @@ JournalList() {
 	printf "apjs\tThe Astrophysical Journal (Supplement Series)\n"
 	printf "aujph\tAustralian Journal of Physics\n"
 	printf "bsrsl\tBulletin de la Societe Royale des Sciences de Liege\n"
+	printf "epjh\tEuropean Physical Journal H\n"
 	printf "mnras\tMonthly Notices of the Royal Astronomical Society\n"
 	printf "msrsl\tMemoires of the Societe Royale des Sciences de Liege\n"
-	printf "nimpa\tNuclear Instruments and Methods (1983 and earlier)\n"
+	printf "natph\tNature Physics\n"
+	printf "nucim\tNuclear Instruments and Methods (1983 and earlier)\n"
 	printf "nimpa\tNuclear Instruments and Methods in Physics Research A\n"
 	printf "nimpb\tNuclear Instruments and Methods in Physics Research B\n"
 	printf "nupha\tNuclear Physics A\n"
@@ -130,8 +132,10 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	apjs | APJS )  HREFTYPE=1; JCODE="apjs"; LTYPE="ARTICLE" ;;
 	aujph | AuJPh )  HREFTYPE=1; JCODE="aujph"; LTYPE="ARTICLE" ;;
 	bsrsl | BSRSL  )   HREFTYPE=2; JCODE="bsrsl"; LTYPE="EJOURNAL" ;;
+	epjh | EPJH )  HREFTYPE=1; JCODE="epjh"; LTYPE="EJOURNAL" ;;
 	mnras | MNRAS ) HREFTYPE=1; JCODE="mnras"; LTYPE="ARTICLE" ;;
 	msrsl | MSRSL  )   HREFTYPE=1; JCODE="msrsl"; LTYPE="ARTICLE" ;;
+	natph | NatPh )  HREFTYPE=1; JCODE="natph"; LTYPE="EJOURNAL" ;;
 	nim | nucim | NIM | NucIM) HREFTYPE=0; JCODE="nucim"; LTYPE="EJOURNAL" ;;
 	nimpa | nima | NIMPA | NIMA) HREFTYPE=0; JCODE="nimpa"; LTYPE="EJOURNAL" ;;
 	nimpb | nimb | NIMPB | NIMB) HREFTYPE=0; JCODE="nimpb"; LTYPE="EJOURNAL" ;;
@@ -275,6 +279,9 @@ FetchBibtex() { # USING ADS TO GET THE BIBTEX
 			read CHOICE <&3 # reading from the stdin redirect defined
 			BIBCODE=`cat $TMPBIBCODELIST | awk 'NR==v1' v1=$CHOICE | awk '{printf $1}'`
 		fi
+		ADSBIBTEX="http://adsabs.harvard.edu/cgi-bin/nph-bib_query?bibcode=$BIBCODE&data_type=BIBTEXPLUS&db_key=ALL&nocookieset=1"
+		printf "Fetching bibtex file from ADS ($ADSBIBTEX)\n"
+		lynx -source "$ADSBIBTEX" | awk 'NR>5' >$TMPBIBTEX
 	fi
 	rm $TMPBIBCODELIST
 	echo "Processing $BIBCODE..."
@@ -432,8 +439,10 @@ jval=$(zenity  --width=400  --height=703 --title "getpaper" --list  --text "Choo
 	FALSE apjs "The Astrophysical Journal (Supplement Series)" \
 	FALSE aujph "Australian Journal of Physics" \
 	FALSE bsrsl "Bulletin de la Societe Royale des Sciences de Liege" \
+	FALSE epjh "European Physical Journal" \
 	FALSE mnras "Monthly Notices of the Royal Astronomical Society" \
 	FALSE msrsl "Memoires of the Societe Royale des Sciences de Liege" \
+	FALSE natph "Nature Physics" \
 	FALSE nimpa "Nuclear Instruments and Methods (1983 and earlier)" \
 	FALSE nimpa "Nuclear Instruments and Methods in Physics Research A" \
 	FALSE nimpb "Nuclear Instruments and Methods in Physics Research B" \
