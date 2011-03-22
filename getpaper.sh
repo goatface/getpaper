@@ -1,5 +1,5 @@
 #!/bin/bash
-# getpaper v 0.86
+# getpaper v 0.90
 # Copyright 2010, 2011 daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -23,6 +23,7 @@ InitVariables () {
 	PRINTCOMMAND="/usr/bin/lpr -P CNS205 -o Duplex=DuplexNoTumble" # you can attempt to simply replace CNS205 with your printer name
 	LIBPATH=/home/`whoami`/library
 	#LIBPATH=/Users/`whoami`/Documents/library # Mac OS
+	#BIBFILE=$LIBPATH/cameron.bib
 	BIBFILE=$LIBPATH/library.bib
 	TMP=/tmp
 	# INTERNAL TEMPORARY FILES -- MAY CHANGE BUT NOT NECESSARY
@@ -39,20 +40,21 @@ InitVariables () {
 }
 
 Usage () {
-	printf "getpaper version 0.86\nDownload, bibtex, print, and/or open papers based on reference!\n"
-	printf "Copyright 2010 daid - www.goatface.org\n"
-	printf "Usage: %s: [-f file] [-j journal] [-v volume] [-p page] [-P] [-O]\n" $0
+	printf "getpaper version 0.90\nDownload, bibtex, print, and/or open papers based on reference!\n"
+	printf "Copyright 2010-2011 daid - www.goatface.org\n"
+	printf "Usage: %s: [-f file] [-j journal] [-v volume] [-p page] [-P] [-O] [-R user@host]\n" $0
 	printf "Description of options:\n"
 	printf "  -f <file>\t: getpaper reads data from <file> where each line corresponds to an article as:\n"
-	printf "\t\t\tPrinciple:\n\t\t\t\tJOURANL\tVOLUME\tPAGE\tCOMMENTS\n"
+	printf "\t\t\tPrinciple:\n\t\t\t\tJOURNAL\tVOLUME\tPAGE\tCOMMENTS\n"
 	printf "\t\t\tExample:\n\t\t\t\tprl\t99\t052502\t12C+alpha 16N RIB\n"
 	printf "\t\t\t(Comments are used in the bibtex for the user's need.)\n"
 	printf "  -j <string>\t: <string> is the journal title abbreviation\n"
 	printf "  -j help\t: Output a list of available journals and abbreviations.\n"
 	printf "  -v <int>\t: <int> is the journal volume number\n"
 	printf "  -p <int>\t: <int> is the article first page\n"
-	printf "  -P \t\t: Turn on printing\n"
+	printf "  -P \t\t: Printing is turned on\n"
 	printf "  -O \t\t: Open the paper(s) for digital viewing\n"
+	printf "  -R user@host\t: Remote download through ssh to user@host\n"
 	printf "(Note: -f option supersedes the -j -v -p options.)\n"
 	printf "\nIf zenity is installed, getpaper will enter GUI mode if no options are passed\n"
 	exit 1
@@ -83,7 +85,9 @@ JournalList() {
 	printf "apjl\tThe Astrophysical Journal (Letters)\n"
 	printf "apjs\tThe Astrophysical Journal (Supplement Series)\n"
 	printf "aujph\tAustralian Journal of Physics\n"
+	printf "baas\tBulletin of the American Astronomical Society\n"
 	printf "bsrsl\tBulletin de la Societe Royale des Sciences de Liege\n"
+	printf "epja\tEuropean Physical Journal A\n"
 	printf "epjh\tEuropean Physical Journal H\n"
 	printf "mnras\tMonthly Notices of the Royal Astronomical Society\n"
 	printf "msrsl\tMemoires of the Societe Royale des Sciences de Liege\n"
@@ -105,6 +109,7 @@ JournalList() {
 	printf "prc\tPhysical Review C\n"
 	printf "prd\tPhysical Review D\n"
 	printf "pre\tPhysical Review E\n"
+	printf "phlb\tPhysics Letters B\n"
 	printf "pasp\tPublications of the Astronomical Society of the Pacific\n"
 	printf "prl\tPhysical Review Letters\n"
 	printf "pthph\tProgress of Theoretical Physics\n"
@@ -131,7 +136,9 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	apjl | APJL )  HREFTYPE=1; JCODE="apjl"; LTYPE="ARTICLE" ;;
 	apjs | APJS )  HREFTYPE=1; JCODE="apjs"; LTYPE="ARTICLE" ;;
 	aujph | AuJPh )  HREFTYPE=1; JCODE="aujph"; LTYPE="ARTICLE" ;;
+	baas | BAAS  )   HREFTYPE=1; JCODE="baas"; LTYPE="ARTICLE" ;;
 	bsrsl | BSRSL  )   HREFTYPE=2; JCODE="bsrsl"; LTYPE="EJOURNAL" ;;
+	epja | EPJA )  HREFTYPE=1; JCODE="epja"; LTYPE="EJOURNAL" ;;
 	epjh | EPJH )  HREFTYPE=1; JCODE="epjh"; LTYPE="EJOURNAL" ;;
 	mnras | MNRAS ) HREFTYPE=1; JCODE="mnras"; LTYPE="ARTICLE" ;;
 	msrsl | MSRSL  )   HREFTYPE=1; JCODE="msrsl"; LTYPE="ARTICLE" ;;
@@ -154,6 +161,7 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	prc | phrvc | PRC )   HREFTYPE=1;JCODE="phrvc";LTYPE="EJOURNAL" ;;
 	prd | phrvd | PRD )   HREFTYPE=1;JCODE="phrvd";LTYPE="EJOURNAL" ;;
 	pre | phrve | PRE )   HREFTYPE=1;JCODE="phrve";LTYPE="EJOURNAL" ;;
+	phlb | physlb | PhLB )   HREFTYPE=0;JCODE="phlb";LTYPE="EJOURNAL" ;;
 	prl | phrvl | PRL )   HREFTYPE=1;JCODE="phrvl";LTYPE="EJOURNAL" ;;
 	pthph | PThPh | PTHPH )   HREFTYPE=1;JCODE="pthph";LTYPE="EJOURNAL" ;;
 	rvmp | RvMP | RVMP ) HREFTYPE=1;JCODE="rvmp";LTYPE="EJOURNAL" ;;
@@ -211,7 +219,8 @@ ParseJVP () { # Parse the Journal/Volume/Page of submission
 	if [ "$Pflag" ]; then
 		COMMENTS="Printed: $COMMENTS"
 	else
-		COMMENTS="Unprinted: $COMMENTS"
+		COMMENTS="From ~/physics/articles"
+		#COMMENTS="Unprinted: $COMMENTS"
 	fi
 	printf "Processing: JOURNAL $JOURNAL VOLUME $VOLUME PAGE $PAGE\n"
 }
@@ -337,12 +346,16 @@ DownloadPdf () {
 		#lynx -base -source -read_timeout=20 "$ADSLINK" >$TMPURL 
 		if [ $HREFTYPE -eq 0 ];then
 			#full paths given for href
-			# at present just for ScienceDirect (from the grep origin=search part)
+			# at present just for ScienceDirect (from the grep sdarticle.pdf (was origin=search))
 			BASEURL=""
 			#2g in BSD sed gives: sed: more than one number or 'g' in substitute flags
 			#LOCALPDF=`grep PDF $TMPURL | sed 's/[Hh][Rr][Ee][Ff]//2g' | sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | head -n 1`
 			#emulate 2g as sed, where goat is regex: sed ':a;s/\([^ ]*goat.*[^\\]\)goat\(.*\)/\1replace\2/;ta'
-			LOCALPDF=`grep PDF $TMPURL | sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | grep "origin=search" | head -n 1`
+			# the following is no longer valid daid 05 Mar 2011 03:47:48 
+			#LOCALPDF=`grep PDF $TMPURL | sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | grep "origin=search" | head -n 1`
+			LOCALPDF=`grep PDF $TMPURL | \
+				sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
+				sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | grep sdarticle.pdf`
 		fi
 		if [ $HREFTYPE -eq 1 ];then
 			#domain omitted for href
@@ -364,9 +377,23 @@ DownloadPdf () {
 	printf "Downloading PDF from $FULLPATH...\n"
 	# we need to mask as Firefox or wget is denied access by error 403 sometimes
 	if [ $GUI -eq 1 ];then
-		wget -U 'Mozilla/5.0' --progress=bar:force "$FULLPATH" -O"$TMP/$FILENAME" 2>&1 | (zenity --title "getpaper" --text "Downloading..." --progress --auto-close --auto-kill)
+		if [ "$Rflag" ];then # Remote flag is on
+			ssh "$USER@$HOST" wget -U 'Mozilla/5.0' --progress=bar:force "$FULLPATH" -O"$TMP/$FILENAME" 2>&1 | (zenity --title "getpaper" --text "Downloading..." --progress --auto-close --auto-kill)
+		else # Remote flag is off
+			wget -U 'Mozilla/5.0' --progress=bar:force "$FULLPATH" -O"$TMP/$FILENAME" 2>&1 | (zenity --title "getpaper" --text "Downloading..." --progress --auto-close --auto-kill)
+		fi
 	else
-		wget -U 'Mozilla/5.0' "$FULLPATH" -O"$TMP/$FILENAME"
+		if [ "$Rflag" ]; then # Remote flag is on
+			#"$WGET" -U 'Mozilla/5.0' "$FULLPATH" -O"$TMP/$FILENAME" # command not found
+			ssh "$USER@$HOST" wget -U 'Mozilla/5.0' "$FULLPATH" -O"$TMP/$FILENAME" # works
+			#ssh "$USER@$HOST" ls  # works 
+			#ssh "$USER@$HOST"  # Pseudo-terminal will not be allocated because stdin is not a terminal.
+			#"ssh $USER@$HOST ls" # command not found
+			#"ssh $USER@$HOST wget -U Mozilla/5.0 $FULLPATH -O /tmp/goatface.pdf" # no such file or directory
+			#"$WGET -U 'Mozilla/5.0' $FULLPATH -O$TMP/$FILENAME"
+		else # Remote flag is off
+			wget -U 'Mozilla/5.0' "$FULLPATH" -O"$TMP/$FILENAME"
+		fi
 	fi
 }
 
@@ -438,8 +465,10 @@ jval=$(zenity  --width=400  --height=703 --title "getpaper" --list  --text "Choo
 	FALSE apjl "The Astrophysical Journal (Letters)" \
 	FALSE apjs "The Astrophysical Journal (Supplement Series)" \
 	FALSE aujph "Australian Journal of Physics" \
+	FALSE baas "Bulletin of the American Astronomical Society" \
 	FALSE bsrsl "Bulletin de la Societe Royale des Sciences de Liege" \
-	FALSE epjh "European Physical Journal" \
+	FALSE epja "European Physical Journal A" \
+	FALSE epjh "European Physical Journal H" \
 	FALSE mnras "Monthly Notices of the Royal Astronomical Society" \
 	FALSE msrsl "Memoires of the Societe Royale des Sciences de Liege" \
 	FALSE natph "Nature Physics" \
@@ -461,6 +490,7 @@ jval=$(zenity  --width=400  --height=703 --title "getpaper" --list  --text "Choo
 	FALSE prc "Physical Review C" \
 	FALSE prd "Physical Review D" \
 	FALSE pre "Physical Review E" \
+	FALSE phlb "Physics Letters B" \
 	FALSE prl "Physical Review Letters" \
 	FALSE pthph "Progress of Theoretical Physics" \
 	FALSE rvmp "Reviews of Modern Physics" \
@@ -498,7 +528,8 @@ pflag=
 fflag=
 Pflag=
 Oflag=
-while getopts j:v:p:f:PO OPTION
+Rflag=
+while getopts j:v:p:f:POR: OPTION
 do
     case $OPTION in
     f) 	  fflag=1
@@ -511,6 +542,8 @@ do
           pval="$OPTARG";;
     P)    Pflag=1;;
     O)    Oflag=1;;
+    R)    Rflag=1
+    	  Rval="$OPTARG";;
     ? | *) Usage;;  
     esac
 done
@@ -522,6 +555,16 @@ else
 	GUI=0
 fi
 # FLAG SETTING FOR INPUT
+if [ "$Rflag" ];then
+	USER=`echo $Rval | sed 's/@.*//'`
+	HOST=`echo $Rval | sed 's/.*@//'`
+	#echo "Your Rval is $Rval"
+	printf "User is $USER, Host is $HOST for ssh Remote download\n"
+	# this command is very oddly broken and gives all kinds of errors that are related to the specific way its quoted...fix later.
+	#WGET="ssh \"$USER@$HOST\" wget"
+#else # we don't need an else until the WGET variable can work to ssh wget
+	#WGET="wget"
+fi
 if [ "$fflag" ]; then
 	INPUTFILE="$fval"
 	if [ ! -e "$INPUTFILE" ];then
@@ -563,6 +606,7 @@ else
 	printf "$JOURNAL\t$VOLUME\t$PAGE\n" > "$INPUT"
 fi
 
+
 # The main part of the script
 exec 3<&0 # stdin redirect for use in while read 
 while read inline
@@ -571,6 +615,10 @@ do
 	SetJournal
 	FetchBibtex	
 	DownloadPdf
+	if [ "$Rval" ];then
+		printf "scp'ing downloaded PDF from temporary location on remote server: "
+		scp "$USER@$HOST:/$TMP/$FILENAME" "$TMP/$FILENAME"
+	fi
         IsPdfValid 
 	CheckDir
 
