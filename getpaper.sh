@@ -1,5 +1,5 @@
 #!/bin/bash
-# getpaper v 0.90
+# getpaper v 0.91
 # Copyright 2010, 2011 daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -22,8 +22,8 @@ InitVariables () {
 	#PDFVIEWER=/usr/bin/open # Mac OS
 	PRINTCOMMAND="/usr/bin/lpr -P CNS205 -o Duplex=DuplexNoTumble" # you can attempt to simply replace CNS205 with your printer name
 	LIBPATH=/home/`whoami`/library
+	#LIBPATH=/home/`whoami`/librarytest
 	#LIBPATH=/Users/`whoami`/Documents/library # Mac OS
-	#BIBFILE=$LIBPATH/cameron.bib
 	BIBFILE=$LIBPATH/library.bib
 	TMP=/tmp
 	# INTERNAL TEMPORARY FILES -- MAY CHANGE BUT NOT NECESSARY
@@ -37,17 +37,27 @@ InitVariables () {
 
 	# internal variables -- do not change!
 	ERROR=0
+	if [ "$Rflag" ];then # Remote flag variables
+		USER=`echo $Rval | sed 's/@.*//'`
+		HOST=`echo $Rval | sed 's/.*@//'`
+		#echo "Your Rval is $Rval"
+		# this command is very oddly broken and gives all kinds of errors that are related to the specific way its quoted...fix later.
+		#WGET="ssh \"$USER@$HOST\" wget"
+	#else # we don't need an else until the WGET variable can work to ssh wget
+		#WGET="wget"
+	fi
 }
 
 Usage () {
-	printf "getpaper version 0.90\nDownload, bibtex, print, and/or open papers based on reference!\n"
+	printf "getpaper version 0.91\nDownload, bibtex, print, and/or open papers based on reference!\n"
 	printf "Copyright 2010-2011 daid - www.goatface.org\n"
-	printf "Usage: %s: [-f file] [-j journal] [-v volume] [-p page] [-P] [-O] [-R user@host]\n" $0
+	printf "Usage: %s: [-c] [-f file] [-j journal] [-v volume] [-p page] [-P] [-O] [-R user@host]\n" $0
 	printf "Description of options:\n"
 	printf "  -f <file>\t: getpaper reads data from <file> where each line corresponds to an article as:\n"
 	printf "\t\t\tPrinciple:\n\t\t\t\tJOURNAL\tVOLUME\tPAGE\tCOMMENTS\n"
 	printf "\t\t\tExample:\n\t\t\t\tprl\t99\t052502\t12C+alpha 16N RIB\n"
 	printf "\t\t\t(Comments are used in the bibtex for the user's need.)\n"
+	printf "  -c \t\t: check only (no downloads or bibtex modification)\n"
 	printf "  -j <string>\t: <string> is the journal title abbreviation\n"
 	printf "  -j help\t: Output a list of available journals and abbreviations.\n"
 	printf "  -v <int>\t: <int> is the journal volume number\n"
@@ -67,7 +77,10 @@ CheckDeps () { # dependency checking
 	type -P grep &>/dev/null || { printf "getpaper requires grep but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/grep/)\nAborting.\n" >&2; exit 1; }
 	type -P sed &>/dev/null || { printf "getpaper requires sed but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/sed/)\nAborting.\n" >&2; exit 1; }
 	type -P awk &>/dev/null || { printf "getpaper requires awk but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/gawk/)\nAborting.\n" >&2; exit 1; }
-
+	if [ $Rflag ];then
+	 ssh "$USER@$HOST" type -P wget &>/dev/null || { printf "getpaper requires wget but it's not in the PATH or not installed on your remote server.\n\t(see http://www.gnu.org/software/wget/)\nAborting.\n" >&2; exit 1; }
+	fi
+ 
 }
 
 Error () { # keep track of any failures
@@ -80,6 +93,7 @@ JournalList() {
 	printf "aa\tAstronomy & Astrophysics\n"
 	printf "aipc\tAmerican Institute of Physics (Conference Proceedings)\n"
 	printf "aj\tThe Astronomical Journal\n"
+	printf "astl\tAstronomy Letters\n"
 	printf "anap\tAnnales d'Astrophysique\n" # none of these are online vi ADS
 	printf "apj\tThe Astrophysical Journal\n"
 	printf "apjl\tThe Astrophysical Journal (Letters)\n"
@@ -89,6 +103,7 @@ JournalList() {
 	printf "bsrsl\tBulletin de la Societe Royale des Sciences de Liege\n"
 	printf "epja\tEuropean Physical Journal A\n"
 	printf "epjh\tEuropean Physical Journal H\n"
+	printf "gecoa\tGeochimica et Cosmochimica Acta\n"
 	printf "mnras\tMonthly Notices of the Royal Astronomical Society\n"
 	printf "msrsl\tMemoires of the Societe Royale des Sciences de Liege\n"
 	printf "natph\tNature Physics\n"
@@ -131,6 +146,7 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	aa  | AA ) HREFTYPE=1; JCODE="a%26a"; LTYPE="ARTICLE" ;;
 	aipc | AIPC )  HREFTYPE=1; JCODE="aipc"; LTYPE="EJOURNAL" ;;
 	aj |AJ )  HREFTYPE=1; JCODE="aj"; LTYPE="ARTICLE" ;;
+	astl | AstL )  HREFTYPE=1; JCODE="astl"; LTYPE="EJOURNAL" ;;
 	anap |AnAp )  HREFTYPE=1; JCODE="anap"; LTYPE="ARTICLE" ;;
 	apj |APJ )  HREFTYPE=1; JCODE="apj"; LTYPE="ARTICLE" ;;
 	apjl | APJL )  HREFTYPE=1; JCODE="apjl"; LTYPE="ARTICLE" ;;
@@ -140,6 +156,7 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	bsrsl | BSRSL  )   HREFTYPE=2; JCODE="bsrsl"; LTYPE="EJOURNAL" ;;
 	epja | EPJA )  HREFTYPE=1; JCODE="epja"; LTYPE="EJOURNAL" ;;
 	epjh | EPJH )  HREFTYPE=1; JCODE="epjh"; LTYPE="EJOURNAL" ;;
+	gecoa | GeCoA | GECOA )   HREFTYPE=0;JCODE="gecoa";LTYPE="EJOURNAL" ;;
 	mnras | MNRAS ) HREFTYPE=1; JCODE="mnras"; LTYPE="ARTICLE" ;;
 	msrsl | MSRSL  )   HREFTYPE=1; JCODE="msrsl"; LTYPE="ARTICLE" ;;
 	natph | NatPh )  HREFTYPE=1; JCODE="natph"; LTYPE="EJOURNAL" ;;
@@ -299,15 +316,18 @@ FetchBibtex() { # USING ADS TO GET THE BIBTEX
 		printf "No BIBCODE could be found!\n"
 		Error
 		continue
+	else
+		echo "$JOURNAL $VOLUME $PAGE is a valid reference"
 	fi
 	YEAR=`echo "$BIBCODE" | head -c 4`
 	if ( grep "$BIBCODE" "$BIBFILE" > /dev/null ); then
-		echo "The article $BIBCODE is already in your library!"
-		echo "$BIBFILE"
-		echo "Skipping..."
-		continue
+		echo "The article $BIBCODE is in your library!"
+		if [ !$cflag ];then
+			echo "$BIBFILE"
+			echo "Skipping..."
+			continue
+		fi
 	fi
-	
 	# may add more papertypes here
 	if ( grep ARTICLE $TMPBIBTEX > /dev/null );then
 		PAPERTYPE="articles"
@@ -341,9 +361,22 @@ DownloadPdf () {
 		if [ -e $TMPURL ];then
 			rm "$TMPURL"
 		fi
-		lynx -base -source -connect_timeout=20 "$ADSLINK" > $TMPURL 
-		#read_timeout is a newer feature many systems don't seem to have...added to lynx 2.8.7 2009.7.5
-		#lynx -base -source -read_timeout=20 "$ADSLINK" >$TMPURL 
+		# ScienceDirect causes lots of problems.
+		# 	Without access, we will get a 'Purchase' link instead of the correct link
+		#	Thus for ScienceDirect we must run this over ssh for remote downloads
+		#	Also many servers do not have lynx but may have elinks
+		#	But we cannot switch default to elinks because of it's lack of -base option
+		#	However, the lynx -base option is only required for HREFTYPE non-zero
+		#	In other words, a terrible hack JUST for ScienceDirect yet again...
+		if [[ !$Rflag && "$HREFTYPE" -ne 0 ]];then # If it's isn't both Remote and ScienceDirect, do...
+			lynx -base -source -connect_timeout=20 "$ADSLINK" > $TMPURL 
+			#read_timeout is a newer feature many systems don't seem to have...added to lynx 2.8.7 2009.7.5
+			#lynx -base -source -read_timeout=20 "$ADSLINK" >$TMPURL 
+		else # If it IS Remote AND ScienceDirect...
+			# the remote shell will be confused by & in a URL, so we need to make it a literal
+			ADSLINK=`echo $ADSLINK | sed 's/\&/\\\&/g'`
+			ssh "$USER@$HOST" elinks -source "$ADSLINK" > $TMPURL
+		fi
 		if [ $HREFTYPE -eq 0 ];then
 			#full paths given for href
 			# at present just for ScienceDirect (from the grep sdarticle.pdf (was origin=search))
@@ -385,7 +418,13 @@ DownloadPdf () {
 	else
 		if [ "$Rflag" ]; then # Remote flag is on
 			#"$WGET" -U 'Mozilla/5.0' "$FULLPATH" -O"$TMP/$FILENAME" # command not found
-			ssh "$USER@$HOST" wget -U 'Mozilla/5.0' "$FULLPATH" -O"$TMP/$FILENAME" # works
+			#echo "ssh $USER@$HOST wget -U 'Mozilla/5.0' -O $TMP/$FILENAME $FULLPATH" # works
+			# the remote shell will be confused by & in a URL, so we need to make it a literal
+			FULLPATH=`echo $FULLPATH | sed 's/\&/\\\&/g'`
+			#echo "ssh "$USER@$HOST" wget -U 'Mozilla/5.0' -O $TMP/$FILENAME $FULLPATH" # works
+			ssh "$USER@$HOST" wget -U 'Mozilla/5.0' -O "$TMP/$FILENAME" "$FULLPATH" # works
+			#ssh "$USER@$HOST" ls  # works 
+			#ssh "$USER@$HOST"  # Pseudo-terminal will not be allocated because stdin is not a terminal.
 			#ssh "$USER@$HOST" ls  # works 
 			#ssh "$USER@$HOST"  # Pseudo-terminal will not be allocated because stdin is not a terminal.
 			#"ssh $USER@$HOST ls" # command not found
@@ -460,6 +499,7 @@ jval=$(zenity  --width=400  --height=703 --title "getpaper" --list  --text "Choo
 	FALSE aa "Astronomy & Astrophysics" \
 	FALSE aipc "American Institute of Physics (Conference Proceedings)" \
 	FALSE aj "The Astronomical Journal" \
+	FALSE astl "Astronomy Letters" \
 	FALSE anap "Annales d Astrophysique" \
 	FALSE apj "The Astrophysical Journal" \
 	FALSE apjl "The Astrophysical Journal (Letters)" \
@@ -469,6 +509,7 @@ jval=$(zenity  --width=400  --height=703 --title "getpaper" --list  --text "Choo
 	FALSE bsrsl "Bulletin de la Societe Royale des Sciences de Liege" \
 	FALSE epja "European Physical Journal A" \
 	FALSE epjh "European Physical Journal H" \
+	FALSE gecoa "Geochimica et Cosmochimica Acta" \
 	FALSE mnras "Monthly Notices of the Royal Astronomical Society" \
 	FALSE msrsl "Memoires of the Societe Royale des Sciences de Liege" \
 	FALSE natph "Nature Physics" \
@@ -514,14 +555,10 @@ fi
 
 }
 
-
-
-
-CheckDeps
-InitVariables
-TmpCleanUp
+# Main
 
 # FLAG READING FOR INPUT
+cflag=
 jflag=
 vflag=
 pflag=
@@ -529,9 +566,10 @@ fflag=
 Pflag=
 Oflag=
 Rflag=
-while getopts j:v:p:f:POR: OPTION
+while getopts cj:v:p:f:POR: OPTION
 do
     case $OPTION in
+    c)    cflag=1;;
     f) 	  fflag=1
     	  fval="$OPTARG";;
     j)    jflag=1
@@ -547,6 +585,14 @@ do
     ? | *) Usage;;  
     esac
 done
+
+InitVariables
+CheckDeps
+TmpCleanUp
+
+if [ $Rflag ];then
+	printf "User is $USER, Host is $HOST for ssh Remote download\n"
+fi
 if [ -z $1 ];then
 	type -P zenity &>/dev/null || { Usage; }
 	GUI=1
@@ -554,17 +600,10 @@ if [ -z $1 ];then
 else
 	GUI=0
 fi
+
+
+
 # FLAG SETTING FOR INPUT
-if [ "$Rflag" ];then
-	USER=`echo $Rval | sed 's/@.*//'`
-	HOST=`echo $Rval | sed 's/.*@//'`
-	#echo "Your Rval is $Rval"
-	printf "User is $USER, Host is $HOST for ssh Remote download\n"
-	# this command is very oddly broken and gives all kinds of errors that are related to the specific way its quoted...fix later.
-	#WGET="ssh \"$USER@$HOST\" wget"
-#else # we don't need an else until the WGET variable can work to ssh wget
-	#WGET="wget"
-fi
 if [ "$fflag" ]; then
 	INPUTFILE="$fval"
 	if [ ! -e "$INPUTFILE" ];then
@@ -614,35 +653,37 @@ do
 	ParseJVP
 	SetJournal
 	FetchBibtex	
-	DownloadPdf
-	if [ "$Rval" ];then
-		printf "scp'ing downloaded PDF from temporary location on remote server: "
-		scp "$USER@$HOST:/$TMP/$FILENAME" "$TMP/$FILENAME"
-	fi
-        IsPdfValid 
-	CheckDir
+	if [ !$cflag ];then # Only do these things without the c(heck) flag
+		DownloadPdf
+		if [ "$Rval" ];then
+			printf "scp'ing downloaded PDF from temporary location on remote server: "
+			scp "$USER@$HOST:/$TMP/$FILENAME" "$TMP/$FILENAME"
+		fi
+        	IsPdfValid 
+		CheckDir
 
-	printf "Moving downloaded PDF from temporary location: "
-	mv -v "$TMP/$FILENAME" "$FILEPATH/$FILENAME"
+		printf "Moving downloaded PDF from temporary location: "
+		mv -v "$TMP/$FILENAME" "$FILEPATH/$FILENAME"
 
-	AddBibtex
+		AddBibtex
 
-	if [ $GUI -eq 1 ];then
-		ans=$(zenity  --list  --title "getpaper" --text "Finished!" --checklist  --column "" --column "Do you want to:" FALSE "Open the pdf" FALSE "Print the pdf" --separator=":"); echo $ans
-	fi
+		if [ $GUI -eq 1 ];then
+			ans=$(zenity  --list  --title "getpaper" --text "Finished!" --checklist  --column "" --column "Do you want to:" FALSE "Open the pdf" FALSE "Print the pdf" --separator=":"); echo $ans
+		fi
 
-	if (echo $ans | grep "Open" > /dev/null);then
-		Oflag=1
-	fi
-	if (echo $ans | grep "Print" /dev/null);then
-		Pflag=1
-	fi
+		if (echo $ans | grep "Open" > /dev/null);then
+			Oflag=1
+		fi
+		if (echo $ans | grep "Print" /dev/null);then
+			Pflag=1
+		fi
 
-	if [ "$Oflag" ]; then
-		Open
-	fi
-	if [ "$Pflag" ]; then
-		Print
+		if [ "$Oflag" ]; then
+			Open
+		fi
+		if [ "$Pflag" ]; then
+			Print
+		fi
 	fi
 done < "$INPUT"
 
