@@ -1,5 +1,5 @@
 #!/bin/bash
-# getpaper v 0.91
+# getpaper v 0.92
 # Copyright 2010, 2011 daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -49,7 +49,7 @@ InitVariables () {
 }
 
 Usage () {
-	printf "getpaper version 0.91\nDownload, bibtex, print, and/or open papers based on reference!\n"
+	printf "getpaper version 0.92\nDownload, bibtex, print, and/or open papers based on reference!\n"
 	printf "Copyright 2010-2011 daid - www.goatface.org\n"
 	printf "Usage: %s: [-c] [-f file] [-j journal] [-v volume] [-p page] [-P] [-O] [-R user@host]\n" $0
 	printf "Description of options:\n"
@@ -182,7 +182,7 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	prl | phrvl | PRL )   HREFTYPE=1;JCODE="phrvl";LTYPE="EJOURNAL" ;;
 	pthph | PThPh | PTHPH )   HREFTYPE=1;JCODE="pthph";LTYPE="EJOURNAL" ;;
 	rvmp | RvMP | RVMP ) HREFTYPE=1;JCODE="rvmp";LTYPE="EJOURNAL" ;;
-	science | SCIENCE ) HREFTYPE=1;JCODE="science";LTYPE="ARTICLE" ;;
+	science | SCIENCE ) HREFTYPE=1;JCODE="science";LTYPE="EJOURNAL" ;;
 	scoa | SCoA| SCOA )  HREFTYPE=1;JCODE="scoa";LTYPE="ARTICLE" ;;
 	zphy | ZPhy| ZPHY )  HREFTYPE=1;JCODE="zphy";LTYPE="EJOURNAL" ;;
 	* ) 
@@ -407,7 +407,7 @@ DownloadPdf () {
 		#cat $TMPURL |grep PDF | sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//    ' | grep "origin=search" |head -n 1 ;exit # debug new journal
 		FULLPATH="$BASEURL$LOCALPDF"
 	fi
-	printf "Downloading PDF from $FULLPATH...\n"
+	printf "Downloading PDF from $FULLPATH ...\n"
 	# we need to mask as Firefox or wget is denied access by error 403 sometimes
 	if [ $GUI -eq 1 ];then
 		if [ "$Rflag" ];then # Remote flag is on
