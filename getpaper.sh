@@ -1,5 +1,5 @@
 #!/bin/bash
-# getpaper v 0.92
+# getpaper v 0.93
 # Copyright 2010, 2011 daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -22,7 +22,7 @@ InitVariables () {
 	#PDFVIEWER=/usr/bin/open # Mac OS
 	PRINTCOMMAND="/usr/bin/lpr -P CNS205 -o Duplex=DuplexNoTumble" # you can attempt to simply replace CNS205 with your printer name
 	LIBPATH=/home/`whoami`/library
-	#LIBPATH=/home/`whoami`/librarytest
+	#LIBPATH=/home/`whoami`/librarytest # debugging
 	#LIBPATH=/Users/`whoami`/Documents/library # Mac OS
 	BIBFILE=$LIBPATH/library.bib
 	TMP=/tmp
@@ -32,6 +32,7 @@ InitVariables () {
 	TMPBIBCODELIST=$TMP/.getpaper_bibcodelist
 	TMPURL=$TMP/.getpaper_url
 	ERRORFILE=$TMP/.getpaper_error
+	LYNXCMD=$TMP/.getpaper_lynxcmd
 	# temporary storage for input information...whereever you want
 	INPUT=$TMP/refinput.txt
 
@@ -49,7 +50,7 @@ InitVariables () {
 }
 
 Usage () {
-	printf "getpaper version 0.92\nDownload, bibtex, print, and/or open papers based on reference!\n"
+	printf "getpaper version 0.93\nDownload, bibtex, print, and/or open papers based on reference!\n"
 	printf "Copyright 2010-2011 daid - www.goatface.org\n"
 	printf "Usage: %s: [-c] [-f file] [-j journal] [-v volume] [-p page] [-P] [-O] [-R user@host]\n" $0
 	printf "Description of options:\n"
@@ -142,6 +143,7 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	#				0 : full paths given for href
 	#				1 : domain absent from href
 	#				2 : local file name given for href
+	PROLA= # don't change this!  Initalizes a variable for PROLA
 	case "$JOURNAL" in
 	aa  | AA ) HREFTYPE=1; JCODE="a%26a"; LTYPE="ARTICLE" ;;
 	aipc | AIPC )  HREFTYPE=1; JCODE="aipc"; LTYPE="EJOURNAL" ;;
@@ -173,13 +175,13 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	pmag | PMag | PMAG )   HREFTYPE=1; JCODE="pmag"; LTYPE="EJOURNAL" ;;
 	ppsa | PPSA  )   HREFTYPE=1; JCODE="ppsa"; LTYPE="EJOURNAL" ;;
 	ppsb | PPSB  )   HREFTYPE=1;JCODE="ppsb";LTYPE="EJOURNAL" ;;
-	pra | phrva | PRA )   HREFTYPE=1;JCODE="phrva";LTYPE="EJOURNAL" ;;
-	prb | phrvb | PRB )   HREFTYPE=1;JCODE="phrvb";LTYPE="EJOURNAL" ;;
-	prc | phrvc | PRC )   HREFTYPE=1;JCODE="phrvc";LTYPE="EJOURNAL" ;;
-	prd | phrvd | PRD )   HREFTYPE=1;JCODE="phrvd";LTYPE="EJOURNAL" ;;
-	pre | phrve | PRE )   HREFTYPE=1;JCODE="phrve";LTYPE="EJOURNAL" ;;
+	pra | phrva | PRA )   PROLA=1;HREFTYPE=1;JCODE="phrva";LTYPE="EJOURNAL" ;;
+	prb | phrvb | PRB )   PROLA=1;HREFTYPE=1;JCODE="phrvb";LTYPE="EJOURNAL" ;;
+	prc | phrvc | PRC )   PROLA=1;HREFTYPE=1;JCODE="phrvc";LTYPE="EJOURNAL" ;;
+	prd | phrvd | PRD )   PROLA=1;HREFTYPE=1;JCODE="phrvd";LTYPE="EJOURNAL" ;;
+	pre | phrve | PRE )   PROLA=1;HREFTYPE=1;JCODE="phrve";LTYPE="EJOURNAL" ;;
 	phlb | physlb | PhLB )   HREFTYPE=0;JCODE="phlb";LTYPE="EJOURNAL" ;;
-	prl | phrvl | PRL )   HREFTYPE=1;JCODE="phrvl";LTYPE="EJOURNAL" ;;
+	prl | phrvl | PRL )   PROLA=1;HREFTYPE=1;JCODE="phrvl";LTYPE="EJOURNAL" ;;
 	pthph | PThPh | PTHPH )   HREFTYPE=1;JCODE="pthph";LTYPE="EJOURNAL" ;;
 	rvmp | RvMP | RVMP ) HREFTYPE=1;JCODE="rvmp";LTYPE="EJOURNAL" ;;
 	science | SCIENCE ) HREFTYPE=1;JCODE="science";LTYPE="EJOURNAL" ;;
@@ -214,6 +216,9 @@ TmpCleanUp () {
 	fi
 	if [ -e $ERRORFILE ];then
 		rm "$ERRORFILE"
+	fi
+	if [ -e $LYNXCMD ];then
+		rm "$LYNXCMD"
 	fi
 }
 
@@ -343,6 +348,37 @@ FetchBibtex() { # USING ADS TO GET THE BIBTEX
 	fi
 }
 
+MakeLynxCmd () {
+	# this is a workaround for the PROLA
+	# basically, instead of using wget, we are going to make a download script for lynx
+	if [ -e $LYNXCMD ];then
+		rm "$LYNXCMD"
+	fi
+	# this enters lynx search mode
+	echo "key /" >> "$LYNXCMD"  
+	# search for 'PDF'
+	echo "key P" >> "$LYNXCMD"  
+	echo "key D" >> "$LYNXCMD"  
+	echo "key F" >> "$LYNXCMD"  
+	# send return command to lynx (will perform the search)
+	echo "key ^J" >> "$LYNXCMD" 
+	# tell lynx to download the link
+	echo "key d" >> "$LYNXCMD" 
+	# send return command to lynx (will 'Save to disk')
+	echo "key ^J" >> "$LYNXCMD"
+	# erase the line of default contents (suggested filename)
+	echo "key ^U" >> "$LYNXCMD"
+	# now we make a new file name out of our file name
+	#make a line for each character in the download destination path, for single key entry
+	echo "$TMP/$FILENAME" | awk 'BEGIN{FS=""}{for(i=1;i<=NF;i++)print "key "$i}' >> "$LYNXCMD"
+	# send return command to lynx (pass Save To location from above and download)
+	echo "key ^J" >> "$LYNXCMD" 
+	# send quit command to lynx
+	echo "key q" >> "$LYNXCMD" 
+	# confirm quit
+	echo "key y" >> "$LYNXCMD" 
+}
+
 DownloadPdf () {
 	FILEPATH="$LIBPATH/$PAPERTYPE/$YEAR"
 	FILENAME="$JOURNAL.$VOLUME.$PAGE.pdf"
@@ -425,13 +461,17 @@ DownloadPdf () {
 			ssh "$USER@$HOST" wget -U 'Mozilla/5.0' -O "$TMP/$FILENAME" "$FULLPATH" # works
 			#ssh "$USER@$HOST" ls  # works 
 			#ssh "$USER@$HOST"  # Pseudo-terminal will not be allocated because stdin is not a terminal.
-			#ssh "$USER@$HOST" ls  # works 
-			#ssh "$USER@$HOST"  # Pseudo-terminal will not be allocated because stdin is not a terminal.
 			#"ssh $USER@$HOST ls" # command not found
 			#"ssh $USER@$HOST wget -U Mozilla/5.0 $FULLPATH -O /tmp/goatface.pdf" # no such file or directory
 			#"$WGET -U 'Mozilla/5.0' $FULLPATH -O$TMP/$FILENAME"
 		else # Remote flag is off
-			wget -U 'Mozilla/5.0' "$FULLPATH" -O"$TMP/$FILENAME"
+			# first test of PROLA workaround -- seems to work!
+			if [ "$PROLA" ]; then
+				MakeLynxCmd
+				lynx -accept_all_cookies -cmd_script="$LYNXCMD" "$ADSLINK"
+			else
+				wget -U 'Mozilla/5.0' "$FULLPATH" -O"$TMP/$FILENAME"
+			fi
 		fi
 	fi
 }
