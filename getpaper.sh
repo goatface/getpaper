@@ -1,5 +1,5 @@
 #!/bin/bash
-# getpaper v 0.93
+# getpaper v 0.94
 # Copyright 2010, 2011 daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -24,6 +24,7 @@ InitVariables () {
 	LIBPATH=/home/`whoami`/library
 	#LIBPATH=/home/`whoami`/librarytest # debugging
 	#LIBPATH=/Users/`whoami`/Documents/library # Mac OS
+	#BIBFILE=$LIBPATH/cameron.bib
 	BIBFILE=$LIBPATH/library.bib
 	TMP=/tmp
 	# INTERNAL TEMPORARY FILES -- MAY CHANGE BUT NOT NECESSARY
@@ -50,7 +51,7 @@ InitVariables () {
 }
 
 Usage () {
-	printf "getpaper version 0.93\nDownload, bibtex, print, and/or open papers based on reference!\n"
+	printf "getpaper version 0.94\nDownload, bibtex, print, and/or open papers based on reference!\n"
 	printf "Copyright 2010-2011 daid - www.goatface.org\n"
 	printf "Usage: %s: [-c] [-f file] [-j journal] [-v volume] [-p page] [-P] [-O] [-R user@host]\n" $0
 	printf "Description of options:\n"
@@ -183,7 +184,7 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	phlb | physlb | PhLB )   HREFTYPE=0;JCODE="phlb";LTYPE="EJOURNAL" ;;
 	prl | phrvl | PRL )   PROLA=1;HREFTYPE=1;JCODE="phrvl";LTYPE="EJOURNAL" ;;
 	pthph | PThPh | PTHPH )   HREFTYPE=1;JCODE="pthph";LTYPE="EJOURNAL" ;;
-	rvmp | RvMP | RVMP ) HREFTYPE=1;JCODE="rvmp";LTYPE="EJOURNAL" ;;
+	rvmp | RvMP | RVMP ) PROLA=1;HREFTYPE=1;JCODE="rvmp";LTYPE="EJOURNAL" ;;
 	science | SCIENCE ) HREFTYPE=1;JCODE="science";LTYPE="EJOURNAL" ;;
 	scoa | SCoA| SCOA )  HREFTYPE=1;JCODE="scoa";LTYPE="ARTICLE" ;;
 	zphy | ZPhy| ZPHY )  HREFTYPE=1;JCODE="zphy";LTYPE="EJOURNAL" ;;
@@ -404,13 +405,14 @@ DownloadPdf () {
 		#	But we cannot switch default to elinks because of it's lack of -base option
 		#	However, the lynx -base option is only required for HREFTYPE non-zero
 		#	In other words, a terrible hack JUST for ScienceDirect yet again...
-		if [[ !$Rflag && "$HREFTYPE" -ne 0 ]];then # If it's isn't both Remote and ScienceDirect, do...
-			lynx -base -source -connect_timeout=20 "$ADSLINK" > $TMPURL 
+		if [[ !$Rflag ]];then # If it's isn't both Remote and ScienceDirect, do...
+			lynx -base -source -connect_timeout=20 "$ADSLINK" > $TMPURL
 			#read_timeout is a newer feature many systems don't seem to have...added to lynx 2.8.7 2009.7.5
 			#lynx -base -source -read_timeout=20 "$ADSLINK" >$TMPURL 
-		else # If it IS Remote AND ScienceDirect...
+		elif [[ "$Rflag" && "$HREFTYPE" -eq 0 ]]; then # If it IS Remote AND ScienceDirect...
 			# the remote shell will be confused by & in a URL, so we need to make it a literal
 			ADSLINK=`echo $ADSLINK | sed 's/\&/\\\&/g'`
+			echo "Science Direct hack"
 			ssh "$USER@$HOST" elinks -source "$ADSLINK" > $TMPURL
 		fi
 		if [ $HREFTYPE -eq 0 ];then
@@ -424,7 +426,8 @@ DownloadPdf () {
 			#LOCALPDF=`grep PDF $TMPURL | sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | grep "origin=search" | head -n 1`
 			LOCALPDF=`grep PDF $TMPURL | \
 				sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
-				sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | grep sdarticle.pdf`
+				sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//'`
+				#sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | grep sdarticle.pdf` # don't seem to need this now
 		fi
 		if [ $HREFTYPE -eq 1 ];then
 			#domain omitted for href
