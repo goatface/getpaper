@@ -1,5 +1,5 @@
 #!/bin/bash
-# getpaper v 0.94
+# getpaper v 0.95
 # Copyright 2010, 2011 daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -51,7 +51,7 @@ InitVariables () {
 }
 
 Usage () {
-	printf "getpaper version 0.94\nDownload, bibtex, print, and/or open papers based on reference!\n"
+	printf "getpaper version 0.95\nDownload, bibtex, print, and/or open papers based on reference!\n"
 	printf "Copyright 2010-2011 daid - www.goatface.org\n"
 	printf "Usage: %s: [-c] [-f file] [-j journal] [-v volume] [-p page] [-P] [-O] [-R user@host]\n" $0
 	printf "Description of options:\n"
@@ -530,6 +530,9 @@ ErrorReport() { # report failures at the end, as lynx may induce screen scroll
 IsPdfValid () { # check if we downloaded a basically valid PDF
 	if ( pdfinfo $TMP/$FILENAME 2>&1 | grep "Error: May not be a PDF file" > /dev/null );then
 		printf "Error in downloading the PDF\nMaybe you do not have access\nTerminating...\n"
+		printf "If you confirm the citation information, and the paper is also in ADS, check for a new version of getpaper:\n"
+		printf "\thttp://www.cns.s.u-tokyo.ac.jp/~daid/hack/getpaper.html"
+		printf "\t(Many repositories are frequently changing their link structure.)"
 		rm -vf $TMP/$FILENAME
 		Error
 		continue
