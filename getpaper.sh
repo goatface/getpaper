@@ -1,5 +1,5 @@
 #!/bin/bash
-# getpaper v 0.95
+# getpaper v 0.96
 # Copyright 2010, 2011 daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -51,7 +51,7 @@ InitVariables () {
 }
 
 Usage () {
-	printf "getpaper version 0.95\nDownload, bibtex, print, and/or open papers based on reference!\n"
+	printf "getpaper version 0.96\nDownload, bibtex, print, and/or open papers based on reference!\n"
 	printf "Copyright 2010-2011 daid - www.goatface.org\n"
 	printf "Usage: %s: [-c] [-f file] [-j journal] [-v volume] [-p page] [-P] [-O] [-R user@host]\n" $0
 	printf "Description of options:\n"
@@ -145,6 +145,7 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	#				1 : domain absent from href
 	#				2 : local file name given for href
 	PROLA= # don't change this!  Initalizes a variable for PROLA
+	SD= # don't change this!  Initalizes a variable for SD
 	case "$JOURNAL" in
 	aa  | AA ) HREFTYPE=1; JCODE="a%26a"; LTYPE="ARTICLE" ;;
 	aipc | AIPC )  HREFTYPE=1; JCODE="aipc"; LTYPE="EJOURNAL" ;;
@@ -159,19 +160,19 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	bsrsl | BSRSL  )   HREFTYPE=2; JCODE="bsrsl"; LTYPE="EJOURNAL" ;;
 	epja | EPJA )  HREFTYPE=1; JCODE="epja"; LTYPE="EJOURNAL" ;;
 	epjh | EPJH )  HREFTYPE=1; JCODE="epjh"; LTYPE="EJOURNAL" ;;
-	gecoa | GeCoA | GECOA )   HREFTYPE=0;JCODE="gecoa";LTYPE="EJOURNAL" ;;
+	gecoa | GeCoA | GECOA )   SD=1;HREFTYPE=0;JCODE="gecoa";LTYPE="EJOURNAL" ;;
 	mnras | MNRAS ) HREFTYPE=1; JCODE="mnras"; LTYPE="ARTICLE" ;;
 	msrsl | MSRSL  )   HREFTYPE=1; JCODE="msrsl"; LTYPE="ARTICLE" ;;
 	natph | NatPh )  HREFTYPE=1; JCODE="natph"; LTYPE="EJOURNAL" ;;
-	nim | nucim | NIM | NucIM) HREFTYPE=0; JCODE="nucim"; LTYPE="EJOURNAL" ;;
-	nimpa | nima | NIMPA | NIMA) HREFTYPE=0; JCODE="nimpa"; LTYPE="EJOURNAL" ;;
-	nimpb | nimb | NIMPB | NIMB) HREFTYPE=0; JCODE="nimpb"; LTYPE="EJOURNAL" ;;
-	nupha | npa | NPA | nucphysa ) HREFTYPE=0; JCODE="nupha"; LTYPE="EJOURNAL" ;;
-	nuphb | npb | NPB | nucphysb ) HREFTYPE=0; JCODE="nuphb"; LTYPE="EJOURNAL" ;;
+	nim | nucim | NIM | NucIM) SD=1;HREFTYPE=0; JCODE="nucim"; LTYPE="EJOURNAL" ;;
+	nimpa | nima | NIMPA | NIMA) SD=1;HREFTYPE=0; JCODE="nimpa"; LTYPE="EJOURNAL" ;;
+	nimpb | nimb | NIMPB | NIMB) SD=1;HREFTYPE=0; JCODE="nimpb"; LTYPE="EJOURNAL" ;;
+	nupha | npa | NPA | nucphysa ) SD=1;HREFTYPE=0; JCODE="nupha"; LTYPE="EJOURNAL" ;;
+	nuphb | npb | NPB | nucphysb ) SD=1;HREFTYPE=0; JCODE="nuphb"; LTYPE="EJOURNAL" ;;
 	obs | OBS )  HREFTYPE=1; JCODE="obs"; LTYPE="ARTICLE" ;;
 	paphs | PAPhS | PAPHS )   HREFTYPE=1; JCODE="paphs"; LTYPE="EJOURNAL" ;;
 	pasp | PASP )   HREFTYPE=1; JCODE="pasp"; LTYPE="ARTICLE" ;;
-	pce | PCE ) HREFTYPE=0; JCODE="pce"; LTYPE="EJOURNAL" ;;
+	pce | PCE ) SD=1;HREFTYPE=0; JCODE="pce"; LTYPE="EJOURNAL" ;;
 	phrv | pr | PhRv | PHRV )   HREFTYPE=1; JCODE="phrv"; LTYPE="EJOURNAL" ;;
 	pmag | PMag | PMAG )   HREFTYPE=1; JCODE="pmag"; LTYPE="EJOURNAL" ;;
 	ppsa | PPSA  )   HREFTYPE=1; JCODE="ppsa"; LTYPE="EJOURNAL" ;;
@@ -181,7 +182,7 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	prc | phrvc | PRC )   PROLA=1;HREFTYPE=1;JCODE="phrvc";LTYPE="EJOURNAL" ;;
 	prd | phrvd | PRD )   PROLA=1;HREFTYPE=1;JCODE="phrvd";LTYPE="EJOURNAL" ;;
 	pre | phrve | PRE )   PROLA=1;HREFTYPE=1;JCODE="phrve";LTYPE="EJOURNAL" ;;
-	phlb | physlb | PhLB )   HREFTYPE=0;JCODE="phlb";LTYPE="EJOURNAL" ;;
+	phlb | physlb | PhLB )   SD=1;HREFTYPE=0;JCODE="phlb";LTYPE="EJOURNAL" ;;
 	prl | phrvl | PRL )   PROLA=1;HREFTYPE=1;JCODE="phrvl";LTYPE="EJOURNAL" ;;
 	pthph | PThPh | PTHPH )   HREFTYPE=1;JCODE="pthph";LTYPE="EJOURNAL" ;;
 	rvmp | RvMP | RVMP ) PROLA=1;HREFTYPE=1;JCODE="rvmp";LTYPE="EJOURNAL" ;;
@@ -424,9 +425,12 @@ DownloadPdf () {
 			#emulate 2g as sed, where goat is regex: sed ':a;s/\([^ ]*goat.*[^\\]\)goat\(.*\)/\1replace\2/;ta'
 			# the following is no longer valid daid 05 Mar 2011 03:47:48 
 			#LOCALPDF=`grep PDF $TMPURL | sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | grep "origin=search" | head -n 1`
-			LOCALPDF=`grep PDF $TMPURL | \
-				sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
-				sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//'`
+			# this will get us the right URL, but wget has a hard time following it from some 404 issues, so we just use lynx instead
+			LOCALPDF=`grep pdfurl $TMPURL | \
+				head -n 1 | sed 's/pdfurl=\"//' | sed 's/\".*//'`
+				# another old style for SD 16 Jan 2012 21:19:49 
+				#sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
+				#sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//'`
 				#sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | grep sdarticle.pdf` # don't seem to need this now
 		fi
 		if [ $HREFTYPE -eq 1 ];then
@@ -469,11 +473,12 @@ DownloadPdf () {
 			#"$WGET -U 'Mozilla/5.0' $FULLPATH -O$TMP/$FILENAME"
 		else # Remote flag is off
 			# first test of PROLA workaround -- seems to work!
-			if [ "$PROLA" ]; then
+			if [[ "$PROLA" || "$SD" ]]; then
 				MakeLynxCmd
 				lynx -accept_all_cookies -cmd_script="$LYNXCMD" "$ADSLINK"
 			else
-				wget -U 'Mozilla/5.0' "$FULLPATH" -O"$TMP/$FILENAME"
+				FULLPATH=`echo $FULLPATH | sed 's/\&/\\\&/g'` # testing to avoid wget "Scheme missing" error
+				wget -U 'Mozilla/5.0' -O"$TMP/$FILENAME" "$FULLPATH"
 			fi
 		fi
 	fi
@@ -531,8 +536,8 @@ IsPdfValid () { # check if we downloaded a basically valid PDF
 	if ( pdfinfo $TMP/$FILENAME 2>&1 | grep "Error: May not be a PDF file" > /dev/null );then
 		printf "Error in downloading the PDF\nMaybe you do not have access\nTerminating...\n"
 		printf "If you confirm the citation information, and the paper is also in ADS, check for a new version of getpaper:\n"
-		printf "\thttp://www.cns.s.u-tokyo.ac.jp/~daid/hack/getpaper.html"
-		printf "\t(Many repositories are frequently changing their link structure.)"
+		printf "\thttp://www.cns.s.u-tokyo.ac.jp/~daid/hack/getpaper.html\n"
+		printf "\t(Many repositories are frequently changing their link structure.)\n"
 		rm -vf $TMP/$FILENAME
 		Error
 		continue
