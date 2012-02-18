@@ -1,6 +1,6 @@
 #!/bin/bash
-# getpaper v 0.96
-# Copyright 2010, 2011 daid kahl
+# getpaper v 0.965
+# Copyright 2010, 2011, 2012  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
 #
@@ -24,8 +24,8 @@ InitVariables () {
 	LIBPATH=/home/`whoami`/library
 	#LIBPATH=/home/`whoami`/librarytest # debugging
 	#LIBPATH=/Users/`whoami`/Documents/library # Mac OS
-	#BIBFILE=$LIBPATH/cameron.bib
-	BIBFILE=$LIBPATH/library.bib
+	#BIBFILE=$LIBPATH/cameron.bib # daid's 1957 Cameron bib
+	BIBFILE=$LIBPATH/library.bib # normal Linux
 	TMP=/tmp
 	# INTERNAL TEMPORARY FILES -- MAY CHANGE BUT NOT NECESSARY
 	TMPBIBCODE=$TMP/.getpaper_bibcode
@@ -51,8 +51,8 @@ InitVariables () {
 }
 
 Usage () {
-	printf "getpaper version 0.96\nDownload, bibtex, print, and/or open papers based on reference!\n"
-	printf "Copyright 2010-2011 daid - www.goatface.org\n"
+	printf "getpaper version 0.965nDownload, bibtex, print, and/or open papers based on reference!\n"
+	printf "Copyright 2010-2012 daid - www.goatface.org\n"
 	printf "Usage: %s: [-c] [-f file] [-j journal] [-v volume] [-p page] [-P] [-O] [-R user@host]\n" $0
 	printf "Description of options:\n"
 	printf "  -f <file>\t: getpaper reads data from <file> where each line corresponds to an article as:\n"
@@ -108,6 +108,8 @@ JournalList() {
 	printf "gecoa\tGeochimica et Cosmochimica Acta\n"
 	printf "mnras\tMonthly Notices of the Royal Astronomical Society\n"
 	printf "msrsl\tMemoires of the Societe Royale des Sciences de Liege\n"
+	printf "metro\tMetrologia\n"
+	printf "natur\tNature\n"
 	printf "natph\tNature Physics\n"
 	printf "nucim\tNuclear Instruments and Methods (1983 and earlier)\n"
 	printf "nimpa\tNuclear Instruments and Methods in Physics Research A\n"
@@ -130,6 +132,7 @@ JournalList() {
 	printf "pasp\tPublications of the Astronomical Society of the Pacific\n"
 	printf "prl\tPhysical Review Letters\n"
 	printf "pthph\tProgress of Theoretical Physics\n"
+	printf "pthps\tProgress of Theoretical Physics Supplement\n"
 	printf "rvmp\tReviews of Modern Physics\n"
 	printf "science\tScience\n"
 	printf "scoa\tSmithsonian Contributions to Astrophysics\n"
@@ -163,6 +166,8 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	gecoa | GeCoA | GECOA )   SD=1;HREFTYPE=0;JCODE="gecoa";LTYPE="EJOURNAL" ;;
 	mnras | MNRAS ) HREFTYPE=1; JCODE="mnras"; LTYPE="ARTICLE" ;;
 	msrsl | MSRSL  )   HREFTYPE=1; JCODE="msrsl"; LTYPE="ARTICLE" ;;
+	metro | Metro )  HREFTYPE=1; JCODE="metro"; LTYPE="EJOURNAL" ;;
+	natur | Nature | Natur )  HREFTYPE=1; JCODE="natur"; LTYPE="EJOURNAL" ;;
 	natph | NatPh )  HREFTYPE=1; JCODE="natph"; LTYPE="EJOURNAL" ;;
 	nim | nucim | NIM | NucIM) SD=1;HREFTYPE=0; JCODE="nucim"; LTYPE="EJOURNAL" ;;
 	nimpa | nima | NIMPA | NIMA) SD=1;HREFTYPE=0; JCODE="nimpa"; LTYPE="EJOURNAL" ;;
@@ -185,6 +190,7 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	phlb | physlb | PhLB )   SD=1;HREFTYPE=0;JCODE="phlb";LTYPE="EJOURNAL" ;;
 	prl | phrvl | PRL )   PROLA=1;HREFTYPE=1;JCODE="phrvl";LTYPE="EJOURNAL" ;;
 	pthph | PThPh | PTHPH )   HREFTYPE=1;JCODE="pthph";LTYPE="EJOURNAL" ;;
+	pthps | PThPS | PTHPS )   HREFTYPE=1;JCODE="pthps";LTYPE="EJOURNAL" ;;
 	rvmp | RvMP | RVMP ) PROLA=1;HREFTYPE=1;JCODE="rvmp";LTYPE="EJOURNAL" ;;
 	science | SCIENCE ) HREFTYPE=1;JCODE="science";LTYPE="EJOURNAL" ;;
 	scoa | SCoA| SCOA )  HREFTYPE=1;JCODE="scoa";LTYPE="ARTICLE" ;;
@@ -392,9 +398,10 @@ DownloadPdf () {
 	fi
 	
 	ADSLINK="http://adsabs.harvard.edu/cgi-bin/nph-data_query?bibcode=$BIBCODE&link_type=$LTYPE&db_key=ALL"
+	echo "$ADSLINK"
 	printf "Determining URL path for PDF...\n"
 	if [ $LTYPE = "ARTICLE" ]; then
-		FULLPATH=$ADSLINK
+		FULLPATH="$ADSLINK" #13 Feb 2012 20:00:27  HTTP request sent, awaiting response... 500 Internal Server Error
 	elif [ $LTYPE = "EJOURNAL" ]; then
 		if [ -e $TMPURL ];then
 			rm "$TMPURL"
@@ -477,7 +484,7 @@ DownloadPdf () {
 				MakeLynxCmd
 				lynx -accept_all_cookies -cmd_script="$LYNXCMD" "$ADSLINK"
 			else
-				FULLPATH=`echo $FULLPATH | sed 's/\&/\\\&/g'` # testing to avoid wget "Scheme missing" error
+				#FULLPATH=`echo $FULLPATH | sed 's/\&/\\\&/g'` # testing to avoid wget "Scheme missing" error #cause 500 error for ApJ, etc
 				wget -U 'Mozilla/5.0' -O"$TMP/$FILENAME" "$FULLPATH"
 			fi
 		fi
@@ -563,6 +570,8 @@ jval=$(zenity  --width=400  --height=703 --title "getpaper" --list  --text "Choo
 	FALSE gecoa "Geochimica et Cosmochimica Acta" \
 	FALSE mnras "Monthly Notices of the Royal Astronomical Society" \
 	FALSE msrsl "Memoires of the Societe Royale des Sciences de Liege" \
+	FALSE metro "Metrologia" \
+	FALSE natur "Nature" \
 	FALSE natph "Nature Physics" \
 	FALSE nimpa "Nuclear Instruments and Methods (1983 and earlier)" \
 	FALSE nimpa "Nuclear Instruments and Methods in Physics Research A" \
@@ -585,6 +594,7 @@ jval=$(zenity  --width=400  --height=703 --title "getpaper" --list  --text "Choo
 	FALSE phlb "Physics Letters B" \
 	FALSE prl "Physical Review Letters" \
 	FALSE pthph "Progress of Theoretical Physics" \
+	FALSE pthps "Progress of Theoretical Physics Supplement" \
 	FALSE rvmp "Reviews of Modern Physics" \
 	FALSE science "Science" \
 	FALSE scoa "Smithsonian Contributions to Astrophysics" \
