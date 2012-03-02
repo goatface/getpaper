@@ -1,5 +1,5 @@
 #!/bin/bash
-# getpaper v 0.965
+# getpaper v 0.966
 # Copyright 2010, 2011, 2012  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -51,7 +51,7 @@ InitVariables () {
 }
 
 Usage () {
-	printf "getpaper version 0.965nDownload, bibtex, print, and/or open papers based on reference!\n"
+	printf "getpaper version 0.966\nDownload, bibtex, print, and/or open papers based on reference!\n"
 	printf "Copyright 2010-2012 daid - www.goatface.org\n"
 	printf "Usage: %s: [-c] [-f file] [-j journal] [-v volume] [-p page] [-P] [-O] [-R user@host]\n" $0
 	printf "Description of options:\n"
@@ -192,7 +192,7 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	pthph | PThPh | PTHPH )   HREFTYPE=1;JCODE="pthph";LTYPE="EJOURNAL" ;;
 	pthps | PThPS | PTHPS )   HREFTYPE=1;JCODE="pthps";LTYPE="EJOURNAL" ;;
 	rvmp | RvMP | RVMP ) PROLA=1;HREFTYPE=1;JCODE="rvmp";LTYPE="EJOURNAL" ;;
-	science | SCIENCE ) HREFTYPE=1;JCODE="science";LTYPE="EJOURNAL" ;;
+	science | SCIENCE ) HREFTYPE=1;JCODE="science";LTYPE="ARTICLE" ;;
 	scoa | SCoA| SCOA )  HREFTYPE=1;JCODE="scoa";LTYPE="ARTICLE" ;;
 	zphy | ZPhy| ZPHY )  HREFTYPE=1;JCODE="zphy";LTYPE="EJOURNAL" ;;
 	* ) 
