@@ -1,5 +1,5 @@
 #!/bin/bash
-# getpaper v 0.966
+# getpaper v 0.967
 # Copyright 2010, 2011, 2012  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -51,7 +51,7 @@ InitVariables () {
 }
 
 Usage () {
-	printf "getpaper version 0.966\nDownload, bibtex, print, and/or open papers based on reference!\n"
+	printf "getpaper version 0.967\nDownload, bibtex, print, and/or open papers based on reference!\n"
 	printf "Copyright 2010-2012 daid - www.goatface.org\n"
 	printf "Usage: %s: [-c] [-f file] [-j journal] [-v volume] [-p page] [-P] [-O] [-R user@host]\n" $0
 	printf "Description of options:\n"
@@ -133,6 +133,7 @@ JournalList() {
 	printf "prl\tPhysical Review Letters\n"
 	printf "pthph\tProgress of Theoretical Physics\n"
 	printf "pthps\tProgress of Theoretical Physics Supplement\n"
+	printf "rsci\tReview of Scientific Instruments\n"
 	printf "rvmp\tReviews of Modern Physics\n"
 	printf "science\tScience\n"
 	printf "scoa\tSmithsonian Contributions to Astrophysics\n"
@@ -191,6 +192,7 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	prl | phrvl | PRL )   PROLA=1;HREFTYPE=1;JCODE="phrvl";LTYPE="EJOURNAL" ;;
 	pthph | PThPh | PTHPH )   HREFTYPE=1;JCODE="pthph";LTYPE="EJOURNAL" ;;
 	pthps | PThPS | PTHPS )   HREFTYPE=1;JCODE="pthps";LTYPE="EJOURNAL" ;;
+	rsci | RScI )  HREFTYPE=0; JCODE="rsci"; LTYPE="EJOURNAL" ;;
 	rvmp | RvMP | RVMP ) PROLA=1;HREFTYPE=1;JCODE="rvmp";LTYPE="EJOURNAL" ;;
 	science | SCIENCE ) HREFTYPE=1;JCODE="science";LTYPE="ARTICLE" ;;
 	scoa | SCoA| SCOA )  HREFTYPE=1;JCODE="scoa";LTYPE="ARTICLE" ;;
@@ -439,6 +441,12 @@ DownloadPdf () {
 				#sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
 				#sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//'`
 				#sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | grep sdarticle.pdf` # don't seem to need this now
+			if [ "$LOCALPDF" == "" ];then # previous command did not grab a URL, try another way (this for AIP)
+				#echo "$LOCALPDF is empty"
+				LOCALPDF=`grep "Download PDF" $TMPURL |  \
+				sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
+				sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | head -n 1`
+			fi
 		fi
 		if [ $HREFTYPE -eq 1 ];then
 			#domain omitted for href
@@ -595,6 +603,7 @@ jval=$(zenity  --width=400  --height=703 --title "getpaper" --list  --text "Choo
 	FALSE prl "Physical Review Letters" \
 	FALSE pthph "Progress of Theoretical Physics" \
 	FALSE pthps "Progress of Theoretical Physics Supplement" \
+	FALSE rsci "Review of Scientific Instruments" \
 	FALSE rvmp "Reviews of Modern Physics" \
 	FALSE science "Science" \
 	FALSE scoa "Smithsonian Contributions to Astrophysics" \
