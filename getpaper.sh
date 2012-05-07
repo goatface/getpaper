@@ -1,5 +1,5 @@
 #!/bin/bash
-# getpaper v 0.967
+# getpaper v 0.97
 # Copyright 2010, 2011, 2012  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -18,12 +18,13 @@
 # along with getpaper.  If not, see <http://www.gnu.org/licenses/>.
 InitVariables () {
 	# USER DEFINED VARIABLES
-	PDFVIEWER=/usr/bin/xpdf # popular alternatives: /usr/bin/acroread /usr/bin/evince /usr/bin/okular
+	PDFVIEWER=/usr/bin/xpdf # popular alternatives: /usr/bin/acroread /usr/bin/evince /usr/bin/okular /usr/bin/epdfview
 	#PDFVIEWER=/usr/bin/open # Mac OS
 	PRINTCOMMAND="/usr/bin/lpr -P CNS205 -o Duplex=DuplexNoTumble" # you can attempt to simply replace CNS205 with your printer name
-	LIBPATH=/home/`whoami`/library
-	#LIBPATH=/home/`whoami`/librarytest # debugging
-	#LIBPATH=/Users/`whoami`/Documents/library # Mac OS
+	LIBPATH=$HOME/library
+	#LIBPATH=$HOME/public_html/crib-new/library
+	#LIBPATH=$HOME/librarytest # debugging
+	#LIBPATH=$HOME/Documents/library # Mac OS
 	#BIBFILE=$LIBPATH/cameron.bib # daid's 1957 Cameron bib
 	BIBFILE=$LIBPATH/library.bib # normal Linux
 	TMP=/tmp
@@ -51,7 +52,7 @@ InitVariables () {
 }
 
 Usage () {
-	printf "getpaper version 0.967\nDownload, bibtex, print, and/or open papers based on reference!\n"
+	printf "getpaper version 0.97\nDownload, bibtex, print, and/or open papers based on reference!\n"
 	printf "Copyright 2010-2012 daid - www.goatface.org\n"
 	printf "Usage: %s: [-c] [-f file] [-j journal] [-v volume] [-p page] [-P] [-O] [-R user@host]\n" $0
 	printf "Description of options:\n"
@@ -81,6 +82,8 @@ CheckDeps () { # dependency checking
 	type -P awk &>/dev/null || { printf "getpaper requires awk but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/gawk/)\nAborting.\n" >&2; exit 1; }
 	if [ $Rflag ];then
 	 ssh "$USER@$HOST" type -P wget &>/dev/null || { printf "getpaper requires wget but it's not in the PATH or not installed on your remote server.\n\t(see http://www.gnu.org/software/wget/)\nAborting.\n" >&2; exit 1; }
+	 # fix me (remote lynx is done by alias so not in PATH but it works...arrr)
+	 ssh "$USER@$HOST" type -t lynx &>/dev/null || { printf "getpaper requires lynx but it's not in the PATH or not installed on your remote server.\n\t(see http://lynx.browser.org/)\nAborting.\n" >&2; exit 1; }
 	fi
  
 }
@@ -106,6 +109,7 @@ JournalList() {
 	printf "epja\tEuropean Physical Journal A\n"
 	printf "epjh\tEuropean Physical Journal H\n"
 	printf "gecoa\tGeochimica et Cosmochimica Acta\n"
+	printf "jphg\tJournal of Physics G: Nuclear and Particle Physics\n"
 	printf "mnras\tMonthly Notices of the Royal Astronomical Society\n"
 	printf "msrsl\tMemoires of the Societe Royale des Sciences de Liege\n"
 	printf "metro\tMetrologia\n"
@@ -165,6 +169,7 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	epja | EPJA )  HREFTYPE=1; JCODE="epja"; LTYPE="EJOURNAL" ;;
 	epjh | EPJH )  HREFTYPE=1; JCODE="epjh"; LTYPE="EJOURNAL" ;;
 	gecoa | GeCoA | GECOA )   SD=1;HREFTYPE=0;JCODE="gecoa";LTYPE="EJOURNAL" ;;
+	jphg | JPhG | jphyg | JPhyG )  HREFTYPE=1; JCODE="jphg"; LTYPE="EJOURNAL" ;;
 	mnras | MNRAS ) HREFTYPE=1; JCODE="mnras"; LTYPE="ARTICLE" ;;
 	msrsl | MSRSL  )   HREFTYPE=1; JCODE="msrsl"; LTYPE="ARTICLE" ;;
 	metro | Metro )  HREFTYPE=1; JCODE="metro"; LTYPE="EJOURNAL" ;;
@@ -374,6 +379,14 @@ MakeLynxCmd () {
 	echo "key ^J" >> "$LYNXCMD" 
 	# tell lynx to download the link
 	echo "key d" >> "$LYNXCMD" 
+	# this enters lynx search mode
+	echo "key /" >> "$LYNXCMD"  
+	# search for 'Save' (some older lynx required that...)
+	echo "key S" >> "$LYNXCMD"
+	echo "key a" >> "$LYNXCMD"
+	echo "key v" >> "$LYNXCMD"
+	echo "key e" >> "$LYNXCMD"
+	echo "key ^J" >> "$LYNXCMD" 
 	# send return command to lynx (will 'Save to disk')
 	echo "key ^J" >> "$LYNXCMD"
 	# erase the line of default contents (suggested filename)
@@ -419,11 +432,15 @@ DownloadPdf () {
 			lynx -base -source -connect_timeout=20 "$ADSLINK" > $TMPURL
 			#read_timeout is a newer feature many systems don't seem to have...added to lynx 2.8.7 2009.7.5
 			#lynx -base -source -read_timeout=20 "$ADSLINK" >$TMPURL 
+		# I think these things are not used? 07 May 2012 18:24:42 
 		elif [[ "$Rflag" && "$HREFTYPE" -eq 0 ]]; then # If it IS Remote AND ScienceDirect...
 			# the remote shell will be confused by & in a URL, so we need to make it a literal
 			ADSLINK=`echo $ADSLINK | sed 's/\&/\\\&/g'`
 			echo "Science Direct hack"
 			ssh "$USER@$HOST" elinks -source "$ADSLINK" > $TMPURL
+		elif [[ "$Rflag" && "$PROLA" ]]; then # If it IS Remote AND PROLA
+			# the remote shell will be confused by & in a URL, so we need to make it a literal
+			ADSLINK=`echo $ADSLINK | sed 's/\&/\\\&/g'`
 		fi
 		if [ $HREFTYPE -eq 0 ];then
 			#full paths given for href
@@ -480,7 +497,18 @@ DownloadPdf () {
 			# the remote shell will be confused by & in a URL, so we need to make it a literal
 			FULLPATH=`echo $FULLPATH | sed 's/\&/\\\&/g'`
 			#echo "ssh "$USER@$HOST" wget -U 'Mozilla/5.0' -O $TMP/$FILENAME $FULLPATH" # works
-			ssh "$USER@$HOST" wget -U 'Mozilla/5.0' -O "$TMP/$FILENAME" "$FULLPATH" # works
+			# first test of PROLA workaround -- seems to work!
+			if [[ "$PROLA" || "$SD" ]]; then
+				MakeLynxCmd
+				echo "Copying lynx command to the ssh host..."
+				scp "$LYNXCMD" "$USER@$HOST:$LYNXCMD"
+				ADSLINK=`echo $ADSLINK | sed 's/\&/\\\&/g'`
+				echo "$ADSLINK"
+				ssh "$USER@$HOST" lynx -accept_all_cookies -cmd_script="$LYNXCMD" "$ADSLINK"
+			else
+				ssh "$USER@$HOST" wget -U 'Mozilla/5.0' -O "$TMP/$FILENAME" "$FULLPATH" # works
+			fi
+			# things I used to test ssh
 			#ssh "$USER@$HOST" ls  # works 
 			#ssh "$USER@$HOST"  # Pseudo-terminal will not be allocated because stdin is not a terminal.
 			#"ssh $USER@$HOST ls" # command not found
@@ -576,6 +604,7 @@ jval=$(zenity  --width=400  --height=703 --title "getpaper" --list  --text "Choo
 	FALSE epja "European Physical Journal A" \
 	FALSE epjh "European Physical Journal H" \
 	FALSE gecoa "Geochimica et Cosmochimica Acta" \
+	FALSE jphg "Journal of Physics G: Nuclear and Particle Physics" \
 	FALSE mnras "Monthly Notices of the Royal Astronomical Society" \
 	FALSE msrsl "Memoires of the Societe Royale des Sciences de Liege" \
 	FALSE metro "Metrologia" \
@@ -728,6 +757,8 @@ do
 		if [ "$Rval" ];then
 			printf "scp'ing downloaded PDF from temporary location on remote server: "
 			scp "$USER@$HOST:/$TMP/$FILENAME" "$TMP/$FILENAME"
+			echo "Removing the tmp file on the ssh host..."
+			ssh "$USER@$HOST" rm -v "$TMP/$FILENAME"
 		fi
         	IsPdfValid 
 		CheckDir
