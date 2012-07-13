@@ -1,5 +1,5 @@
 #!/bin/bash
-# getpaper v 0.97
+# getpaper v 0.975
 # Copyright 2010, 2011, 2012  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -19,14 +19,16 @@
 InitVariables () {
 	# USER DEFINED VARIABLES
 	PDFVIEWER=/usr/bin/xpdf # popular alternatives: /usr/bin/acroread /usr/bin/evince /usr/bin/okular /usr/bin/epdfview
-	#PDFVIEWER=/usr/bin/open # Mac OS
+	#PDFVIEWER=/usr/bin/open # Mac OS X
 	PRINTCOMMAND="/usr/bin/lpr -P CNS205 -o Duplex=DuplexNoTumble" # you can attempt to simply replace CNS205 with your printer name
-	LIBPATH=$HOME/library
-	#LIBPATH=$HOME/public_html/crib-new/library
+	LIBPATH=$HOME/library # Normal GNU/Linux style
+	#LIBPATH=$HOME/Documents/library # Mac OS X
+	# some of daid's personal ones...I want to make this in a config file in the future!
+	#LIBPATH=$HOME/public_html/crib-new/library # CRIB website
 	#LIBPATH=$HOME/librarytest # debugging
-	#LIBPATH=$HOME/Documents/library # Mac OS
+	#LIBPATH=$HOME/physics/cns-citations # CNS Citations
 	#BIBFILE=$LIBPATH/cameron.bib # daid's 1957 Cameron bib
-	BIBFILE=$LIBPATH/library.bib # normal Linux
+	BIBFILE=$LIBPATH/library.bib # normal for all cases
 	TMP=/tmp
 	# INTERNAL TEMPORARY FILES -- MAY CHANGE BUT NOT NECESSARY
 	TMPBIBCODE=$TMP/.getpaper_bibcode
@@ -60,6 +62,7 @@ Usage () {
 	printf "\t\t\tPrinciple:\n\t\t\t\tJOURNAL\tVOLUME\tPAGE\tCOMMENTS\n"
 	printf "\t\t\tExample:\n\t\t\t\tprl\t99\t052502\t12C+alpha 16N RIB\n"
 	printf "\t\t\t(Comments are used in the bibtex for the user's need.)\n"
+	printf "  -b \t\t: bibtex only (no downloads)\n"
 	printf "  -c \t\t: check only (no downloads or bibtex modification)\n"
 	printf "  -j <string>\t: <string> is the journal title abbreviation\n"
 	printf "  -j help\t: Output a list of available journals and abbreviations.\n"
@@ -74,14 +77,14 @@ Usage () {
 }
 
 CheckDeps () { # dependency checking
-	type -P lynx &>/dev/null || { printf "getpaper requires lynx but it's not in your PATH or not installed.\n\t(see http://lynx.isc.org/)\nAborting.\n" >&2; exit 1; }
-	type -P wget &>/dev/null || { printf "getpaper requires wget but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/wget/)\nAborting.\n" >&2; exit 1; }
-	type -P pdfinfo &>/dev/null || { printf "getpaper requires pdfinfo but it's not in your PATH or not installed.\n\t(see http://poppler.freedesktop.org/)\nAborting.\n" >&2; exit 1; }
-	type -P grep &>/dev/null || { printf "getpaper requires grep but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/grep/)\nAborting.\n" >&2; exit 1; }
-	type -P sed &>/dev/null || { printf "getpaper requires sed but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/sed/)\nAborting.\n" >&2; exit 1; }
-	type -P awk &>/dev/null || { printf "getpaper requires awk but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/gawk/)\nAborting.\n" >&2; exit 1; }
+	which lynx &>/dev/null || { printf "getpaper requires lynx but it's not in your PATH or not installed.\n\t(see http://lynx.isc.org/)\nAborting.\n" >&2; exit 1; }
+	which wget &>/dev/null || { printf "getpaper requires wget but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/wget/)\nAborting.\n" >&2; exit 1; }
+	which pdfinfo &>/dev/null || { printf "getpaper requires pdfinfo but it's not in your PATH or not installed.\n\t(see http://poppler.freedesktop.org/)\nAborting.\n" >&2; exit 1; }
+	which grep &>/dev/null || { printf "getpaper requires grep but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/grep/)\nAborting.\n" >&2; exit 1; }
+	which sed &>/dev/null || { printf "getpaper requires sed but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/sed/)\nAborting.\n" >&2; exit 1; }
+	which awk &>/dev/null || { printf "getpaper requires awk but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/gawk/)\nAborting.\n" >&2; exit 1; }
 	if [ $Rflag ];then
-	 ssh "$USER@$HOST" type -P wget &>/dev/null || { printf "getpaper requires wget but it's not in the PATH or not installed on your remote server.\n\t(see http://www.gnu.org/software/wget/)\nAborting.\n" >&2; exit 1; }
+	 ssh "$USER@$HOST" which wget &>/dev/null || { printf "getpaper requires wget but it's not in the PATH or not installed on your remote server.\n\t(see http://www.gnu.org/software/wget/)\nAborting.\n" >&2; exit 1; }
 	 # fix me (remote lynx is done by alias so not in PATH but it works...arrr)
 	 ssh "$USER@$HOST" type -t lynx &>/dev/null || { printf "getpaper requires lynx but it's not in the PATH or not installed on your remote server.\n\t(see http://lynx.browser.org/)\nAborting.\n" >&2; exit 1; }
 	fi
@@ -107,6 +110,11 @@ JournalList() {
 	printf "baas\tBulletin of the American Astronomical Society\n"
 	printf "bsrsl\tBulletin de la Societe Royale des Sciences de Liege\n"
 	printf "epja\tEuropean Physical Journal A\n"
+	printf "epjb\tEuropean Physical Journal B\n"
+	printf "epjc\tEuropean Physical Journal C\n"
+	printf "epjd\tEuropean Physical Journal D\n"
+	printf "epje\tEuropean Physical Journal E\n"
+	printf "epjst\tEuropean Physical Journal ST\n"
 	printf "epjh\tEuropean Physical Journal H\n"
 	printf "gecoa\tGeochimica et Cosmochimica Acta\n"
 	printf "jphg\tJournal of Physics G: Nuclear and Particle Physics\n"
@@ -127,6 +135,7 @@ JournalList() {
 	printf "pmag\tPhilosophical Magazine\n"
 	printf "ppsa\tProceedings of the Physical Society A\n"
 	printf "ppsb\tProceedings of the Physical Society B\n"
+	printf "pos\tProceedings of Science\n"
 	printf "pra\tPhysical Review A\n"
 	printf "prb\tPhysical Review B\n"
 	printf "prc\tPhysical Review C\n"
@@ -167,6 +176,11 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	baas | BAAS  )   HREFTYPE=1; JCODE="baas"; LTYPE="ARTICLE" ;;
 	bsrsl | BSRSL  )   HREFTYPE=2; JCODE="bsrsl"; LTYPE="EJOURNAL" ;;
 	epja | EPJA )  HREFTYPE=1; JCODE="epja"; LTYPE="EJOURNAL" ;;
+	epjb | EPJB )  HREFTYPE=1; JCODE="epjb"; LTYPE="EJOURNAL" ;;
+	epjc | EPJC )  HREFTYPE=1; JCODE="epjc"; LTYPE="EJOURNAL" ;;
+	epjd | EPJD )  HREFTYPE=1; JCODE="epjd"; LTYPE="EJOURNAL" ;;
+	epje | EPJE )  HREFTYPE=1; JCODE="epje"; LTYPE="EJOURNAL" ;;
+	epjst | EPJST )  HREFTYPE=1; JCODE="epjst"; LTYPE="EJOURNAL" ;;
 	epjh | EPJH )  HREFTYPE=1; JCODE="epjh"; LTYPE="EJOURNAL" ;;
 	gecoa | GeCoA | GECOA )   SD=1;HREFTYPE=0;JCODE="gecoa";LTYPE="EJOURNAL" ;;
 	jphg | JPhG | jphyg | JPhyG )  HREFTYPE=1; JCODE="jphg"; LTYPE="EJOURNAL" ;;
@@ -184,10 +198,11 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	paphs | PAPhS | PAPHS )   HREFTYPE=1; JCODE="paphs"; LTYPE="EJOURNAL" ;;
 	pasp | PASP )   HREFTYPE=1; JCODE="pasp"; LTYPE="ARTICLE" ;;
 	pce | PCE ) SD=1;HREFTYPE=0; JCODE="pce"; LTYPE="EJOURNAL" ;;
-	phrv | pr | PhRv | PHRV )   HREFTYPE=1; JCODE="phrv"; LTYPE="EJOURNAL" ;;
+	phrv | pr | PhRv | PHRV )   PROLA=1; HREFTYPE=1; JCODE="phrv"; LTYPE="EJOURNAL" ;;
 	pmag | PMag | PMAG )   HREFTYPE=1; JCODE="pmag"; LTYPE="EJOURNAL" ;;
 	ppsa | PPSA  )   HREFTYPE=1; JCODE="ppsa"; LTYPE="EJOURNAL" ;;
 	ppsb | PPSB  )   HREFTYPE=1;JCODE="ppsb";LTYPE="EJOURNAL" ;;
+	pos | POS | PoS )  HREFTYPE=1; JCODE="pos"; LTYPE="ARTICLE" ;;
 	pra | phrva | PRA )   PROLA=1;HREFTYPE=1;JCODE="phrva";LTYPE="EJOURNAL" ;;
 	prb | phrvb | PRB )   PROLA=1;HREFTYPE=1;JCODE="phrvb";LTYPE="EJOURNAL" ;;
 	prc | phrvc | PRC )   PROLA=1;HREFTYPE=1;JCODE="phrvc";LTYPE="EJOURNAL" ;;
@@ -602,6 +617,11 @@ jval=$(zenity  --width=400  --height=703 --title "getpaper" --list  --text "Choo
 	FALSE baas "Bulletin of the American Astronomical Society" \
 	FALSE bsrsl "Bulletin de la Societe Royale des Sciences de Liege" \
 	FALSE epja "European Physical Journal A" \
+	FALSE epjb "European Physical Journal B" \
+	FALSE epjc "European Physical Journal C" \
+	FALSE epjd "European Physical Journal D" \
+	FALSE epje "European Physical Journal E" \
+	FALSE epjst "European Physical Journal ST" \
 	FALSE epjh "European Physical Journal H" \
 	FALSE gecoa "Geochimica et Cosmochimica Acta" \
 	FALSE jphg "Journal of Physics G: Nuclear and Particle Physics" \
@@ -623,6 +643,7 @@ jval=$(zenity  --width=400  --height=703 --title "getpaper" --list  --text "Choo
 	FALSE pmag "Philosophical Magazine" \
 	FALSE ppsa "Proceedings of the Physical Society A" \
 	FALSE ppsb "Proceedings of the Physical Society B" \
+	FALSE pos "Proceedings of Science" \
 	FALSE pra "Physical Review A" \
 	FALSE prb "Physical Review B" \
 	FALSE prc "Physical Review C" \
@@ -657,17 +678,21 @@ fi
 # Main
 
 # FLAG READING FOR INPUT
+bflag=
 cflag=
 jflag=
 vflag=
 pflag=
 fflag=
+bflag=
 Pflag=
 Oflag=
 Rflag=
-while getopts cj:v:p:f:POR: OPTION
+
+while getopts bcj:v:p:f:POR: OPTION
 do
     case $OPTION in
+    b)    bflag=1;;
     c)    cflag=1;;
     f) 	  fflag=1
     	  fval="$OPTARG";;
@@ -693,7 +718,7 @@ if [ $Rflag ];then
 	printf "User is $USER, Host is $HOST for ssh Remote download\n"
 fi
 if [ -z $1 ];then
-	type -P zenity &>/dev/null || { Usage; }
+	which zenity &>/dev/null || { Usage; }
 	GUI=1
 	GUI
 else
@@ -752,7 +777,7 @@ do
 	ParseJVP
 	SetJournal
 	FetchBibtex	
-	if [ !$cflag ];then # Only do these things without the c(heck) flag
+	if [[ -z $cflag  && -z $bflag ]];then # Only do these things without the c(heck) flag and b(ibtex) flag
 		DownloadPdf
 		if [ "$Rval" ];then
 			printf "scp'ing downloaded PDF from temporary location on remote server: "
@@ -765,9 +790,12 @@ do
 
 		printf "Moving downloaded PDF from temporary location: "
 		mv -v "$TMP/$FILENAME" "$FILEPATH/$FILENAME"
+	fi
+	if [ -z $cflag ];then # Only do these things without the c(heck) flag
 
 		AddBibtex
-
+	fi
+	if [[ -z $cflag && -z $bflag ]];then # Only do these things without the c(heck) flag and b(ibtex) flag
 		if [ $GUI -eq 1 ];then
 			ans=$(zenity  --list  --title "getpaper" --text "Finished!" --checklist  --column "" --column "Do you want to:" FALSE "Open the pdf" FALSE "Print the pdf" --separator=":"); echo $ans
 		fi
