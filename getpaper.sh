@@ -1,5 +1,5 @@
 #!/bin/bash
-# getpaper v 0.975
+# getpaper v 0.976
 # Copyright 2010, 2011, 2012  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -56,18 +56,19 @@ InitVariables () {
 Usage () {
 	printf "getpaper version 0.97\nDownload, bibtex, print, and/or open papers based on reference!\n"
 	printf "Copyright 2010-2012 daid - www.goatface.org\n"
-	printf "Usage: %s: [-c] [-f file] [-j journal] [-v volume] [-p page] [-P] [-O] [-R user@host]\n" $0
+	printf "Usage: %s: [-q] [-b] [-f file] [-j journal] [-v volume] [-p page] [-c \"comments\"] [-P] [-O] [-R user@host]\n" $0
 	printf "Description of options:\n"
 	printf "  -f <file>\t: getpaper reads data from <file> where each line corresponds to an article as:\n"
 	printf "\t\t\tPrinciple:\n\t\t\t\tJOURNAL\tVOLUME\tPAGE\tCOMMENTS\n"
 	printf "\t\t\tExample:\n\t\t\t\tprl\t99\t052502\t12C+alpha 16N RIB\n"
 	printf "\t\t\t(Comments are used in the bibtex for the user's need.)\n"
+	printf "  -q \t\t: query (no downloads or bibtex modification)\n"
 	printf "  -b \t\t: bibtex only (no downloads)\n"
-	printf "  -c \t\t: check only (no downloads or bibtex modification)\n"
 	printf "  -j <string>\t: <string> is the journal title abbreviation\n"
 	printf "  -j help\t: Output a list of available journals and abbreviations.\n"
 	printf "  -v <int>\t: <int> is the journal volume number\n"
 	printf "  -p <int>\t: <int> is the article first page\n"
+	printf "  -c \"<string>\"\t: <string> is any comments, in quotes, including spaces\n"
 	printf "  -P \t\t: Printing is turned on\n"
 	printf "  -O \t\t: Open the paper(s) for digital viewing\n"
 	printf "  -R user@host\t: Remote download through ssh to user@host\n"
@@ -150,6 +151,7 @@ JournalList() {
 	printf "rvmp\tReviews of Modern Physics\n"
 	printf "science\tScience\n"
 	printf "scoa\tSmithsonian Contributions to Astrophysics\n"
+	printf "va\tVistas in Astronomy\n"
 	printf "zphy\tZeitschrift fur Physik\n"
 }
 
@@ -216,6 +218,7 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	rvmp | RvMP | RVMP ) PROLA=1;HREFTYPE=1;JCODE="rvmp";LTYPE="EJOURNAL" ;;
 	science | SCIENCE ) HREFTYPE=1;JCODE="science";LTYPE="ARTICLE" ;;
 	scoa | SCoA| SCOA )  HREFTYPE=1;JCODE="scoa";LTYPE="ARTICLE" ;;
+	va | VA | ViA | via) SD=1;HREFTYPE=0; JCODE="va"; LTYPE="EJOURNAL" ;;
 	zphy | ZPhy| ZPHY )  HREFTYPE=1;JCODE="zphy";LTYPE="EJOURNAL" ;;
 	* ) 
 	        printf "ERROR: Journal code $JOURNAL not in database, skipping...\n"
@@ -256,6 +259,7 @@ ParseJVP () { # Parse the Journal/Volume/Page of submission
 	JOURNAL=`printf "$inline"|awk '{printf $1}'`
 	VOLUME=`printf "$inline"|awk '{printf $2}'`
 	PAGE=`printf "$inline"|awk '{printf $3}'`
+	# FIX ME 15 Aug 2012 13:59:17 
 	if [ "$fflag" ];then
 		COMMENTS=`printf "$inline" | awk '{
 		                    for (i=1;i<=NF;i++)
@@ -264,15 +268,17 @@ ParseJVP () { # Parse the Journal/Volume/Page of submission
 		                          printf("%s ",$i)
 		                       }
 		                    }'`
-	#else # broken for now!  It uses inline instead of user input...how to fix it?
+	else # broken for now!  It uses inline instead of user input...how to fix it?
+		COMMENTS="$cval"
 		#printf "Input comment for BibTex:"
 		#readline COMMENTS
 	fi
 	if [ "$Pflag" ]; then
 		COMMENTS="Printed: $COMMENTS"
 	else
-		COMMENTS="From ~/physics/articles"
-		#COMMENTS="Unprinted: $COMMENTS"
+		#COMMENTS="From ~/physics/articles"
+		#COMMENTS="Unprinted: 35Si IAR"
+		COMMENTS="Unprinted: $COMMENTS"
 	fi
 	printf "Processing: JOURNAL $JOURNAL VOLUME $VOLUME PAGE $PAGE\n"
 }
@@ -357,7 +363,7 @@ FetchBibtex() { # USING ADS TO GET THE BIBTEX
 	YEAR=`echo "$BIBCODE" | head -c 4`
 	if ( grep "$BIBCODE" "$BIBFILE" > /dev/null ); then
 		echo "The article $BIBCODE is in your library!"
-		if [ !$cflag ];then
+		if [ !$qflag ];then
 			echo "$BIBFILE"
 			echo "Skipping..."
 			continue
@@ -657,6 +663,7 @@ jval=$(zenity  --width=400  --height=703 --title "getpaper" --list  --text "Choo
 	FALSE rvmp "Reviews of Modern Physics" \
 	FALSE science "Science" \
 	FALSE scoa "Smithsonian Contributions to Astrophysics" \
+	FALSE va "Vistas in Astronomy" \
 	FALSE zphy "Zeitschrift fur Physik" \
 )
 if [ ! -z $jval ];then
@@ -678,22 +685,26 @@ fi
 # Main
 
 # FLAG READING FOR INPUT
+# we can remove this I think 15 Aug 2012 12:00:36 
 bflag=
-cflag=
+qflag=
 jflag=
 vflag=
 pflag=
+cflag=
 fflag=
 bflag=
 Pflag=
 Oflag=
 Rflag=
 
-while getopts bcj:v:p:f:POR: OPTION
+while getopts bqj:v:p:f:c:POR: OPTION
 do
     case $OPTION in
     b)    bflag=1;;
-    c)    cflag=1;;
+    c)    cflag=1
+    	  cval="$OPTARG";;
+    q)    qflag=1;;
     f) 	  fflag=1
     	  fval="$OPTARG";;
     j)    jflag=1
@@ -777,7 +788,7 @@ do
 	ParseJVP
 	SetJournal
 	FetchBibtex	
-	if [[ -z $cflag  && -z $bflag ]];then # Only do these things without the c(heck) flag and b(ibtex) flag
+	if [[ -z $qflag  && -z $bflag ]];then # Only do these things without the c(heck) flag and b(ibtex) flag
 		DownloadPdf
 		if [ "$Rval" ];then
 			printf "scp'ing downloaded PDF from temporary location on remote server: "
@@ -791,11 +802,11 @@ do
 		printf "Moving downloaded PDF from temporary location: "
 		mv -v "$TMP/$FILENAME" "$FILEPATH/$FILENAME"
 	fi
-	if [ -z $cflag ];then # Only do these things without the c(heck) flag
+	if [ -z $qflag ];then # Only do these things without the c(heck) flag
 
 		AddBibtex
 	fi
-	if [[ -z $cflag && -z $bflag ]];then # Only do these things without the c(heck) flag and b(ibtex) flag
+	if [[ -z $qflag && -z $bflag ]];then # Only do these things without the c(heck) flag and b(ibtex) flag
 		if [ $GUI -eq 1 ];then
 			ans=$(zenity  --list  --title "getpaper" --text "Finished!" --checklist  --column "" --column "Do you want to:" FALSE "Open the pdf" FALSE "Print the pdf" --separator=":"); echo $ans
 		fi
