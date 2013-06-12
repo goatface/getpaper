@@ -1,6 +1,6 @@
 #!/bin/bash
-# getpaper v 0.976
-# Copyright 2010, 2011, 2012  daid kahl
+# getpaper v 0.979
+# Copyright 2010-2013  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
 #
@@ -84,11 +84,11 @@ CheckDeps () { # dependency checking
 	which grep &>/dev/null || { printf "getpaper requires grep but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/grep/)\nAborting.\n" >&2; exit 1; }
 	which sed &>/dev/null || { printf "getpaper requires sed but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/sed/)\nAborting.\n" >&2; exit 1; }
 	which awk &>/dev/null || { printf "getpaper requires awk but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/gawk/)\nAborting.\n" >&2; exit 1; }
-	if [ $Rflag ];then
-	 ssh "$USER@$HOST" which wget &>/dev/null || { printf "getpaper requires wget but it's not in the PATH or not installed on your remote server.\n\t(see http://www.gnu.org/software/wget/)\nAborting.\n" >&2; exit 1; }
+	#if [ $Rflag ];then
+	 #ssh "$USER@$HOST" which wget &>/dev/null || { printf "getpaper requires wget but it's not in the PATH or not installed on your remote server.\n\t(see http://www.gnu.org/software/wget/)\nAborting.\n" >&2; exit 1; }
 	 # fix me (remote lynx is done by alias so not in PATH but it works...arrr)
-	 ssh "$USER@$HOST" type -t lynx &>/dev/null || { printf "getpaper requires lynx but it's not in the PATH or not installed on your remote server.\n\t(see http://lynx.browser.org/)\nAborting.\n" >&2; exit 1; }
-	fi
+	 #ssh "$USER@$HOST" type -t lynx &>/dev/null || { printf "getpaper requires lynx but it's not in the PATH or not installed on your remote server.\n\t(see http://lynx.browser.org/)\nAborting.\n" >&2; exit 1; }
+	#fi
  
 }
 
@@ -107,6 +107,7 @@ JournalList() {
 	printf "apj\tThe Astrophysical Journal\n"
 	printf "apjl\tThe Astrophysical Journal (Letters)\n"
 	printf "apjs\tThe Astrophysical Journal (Supplement Series)\n"
+	printf "arnps\tAnnual Review of Nuclear and Particle Science\n"
 	printf "aujph\tAustralian Journal of Physics\n"
 	printf "baas\tBulletin of the American Astronomical Society\n"
 	printf "bsrsl\tBulletin de la Societe Royale des Sciences de Liege\n"
@@ -124,6 +125,7 @@ JournalList() {
 	printf "metro\tMetrologia\n"
 	printf "natur\tNature\n"
 	printf "natph\tNature Physics\n"
+	printf "newar\tNew Astronomy Reviews\n"
 	printf "nucim\tNuclear Instruments and Methods (1983 and earlier)\n"
 	printf "nimpa\tNuclear Instruments and Methods in Physics Research A\n"
 	printf "nimpb\tNuclear Instruments and Methods in Physics Research B\n"
@@ -145,6 +147,7 @@ JournalList() {
 	printf "phlb\tPhysics Letters B\n"
 	printf "pasp\tPublications of the Astronomical Society of the Pacific\n"
 	printf "prl\tPhysical Review Letters\n"
+	printf "prpnp\tProgress in Particle and Nuclear Physics\n"
 	printf "pthph\tProgress of Theoretical Physics\n"
 	printf "pthps\tProgress of Theoretical Physics Supplement\n"
 	printf "rsci\tReview of Scientific Instruments\n"
@@ -163,17 +166,18 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	#				0 : full paths given for href
 	#				1 : domain absent from href
 	#				2 : local file name given for href
-	PROLA= # don't change this!  Initalizes a variable for PROLA
+	AIP= # don't change this!  Initalizes a variable for AIP
 	SD= # don't change this!  Initalizes a variable for SD
 	case "$JOURNAL" in
 	aa  | AA ) HREFTYPE=1; JCODE="a%26a"; LTYPE="ARTICLE" ;;
-	aipc | AIPC )  HREFTYPE=1; JCODE="aipc"; LTYPE="EJOURNAL" ;;
+	aipc | AIPC )  AIP=1; HREFTYPE=1; JCODE="aipc"; LTYPE="EJOURNAL" ;;
 	aj |AJ )  HREFTYPE=1; JCODE="aj"; LTYPE="ARTICLE" ;;
 	astl | AstL )  HREFTYPE=1; JCODE="astl"; LTYPE="EJOURNAL" ;;
 	anap |AnAp )  HREFTYPE=1; JCODE="anap"; LTYPE="ARTICLE" ;;
 	apj |APJ )  HREFTYPE=1; JCODE="apj"; LTYPE="ARTICLE" ;;
 	apjl | APJL )  HREFTYPE=1; JCODE="apjl"; LTYPE="ARTICLE" ;;
 	apjs | APJS )  HREFTYPE=1; JCODE="apjs"; LTYPE="ARTICLE" ;;
+	arnps  | ARNPS ) HREFTYPE=1; JCODE="arnps"; LTYPE="ARTICLE" ;;
 	aujph | AuJPh )  HREFTYPE=1; JCODE="aujph"; LTYPE="ARTICLE" ;;
 	baas | BAAS  )   HREFTYPE=1; JCODE="baas"; LTYPE="ARTICLE" ;;
 	bsrsl | BSRSL  )   HREFTYPE=2; JCODE="bsrsl"; LTYPE="EJOURNAL" ;;
@@ -191,6 +195,7 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	metro | Metro )  HREFTYPE=1; JCODE="metro"; LTYPE="EJOURNAL" ;;
 	natur | Nature | Natur )  HREFTYPE=1; JCODE="natur"; LTYPE="EJOURNAL" ;;
 	natph | NatPh )  HREFTYPE=1; JCODE="natph"; LTYPE="EJOURNAL" ;;
+	newar | NewAR | NEWAR )   SD=1;HREFTYPE=0;JCODE="newar";LTYPE="EJOURNAL" ;;
 	nim | nucim | NIM | NucIM) SD=1;HREFTYPE=0; JCODE="nucim"; LTYPE="EJOURNAL" ;;
 	nimpa | nima | NIMPA | NIMA) SD=1;HREFTYPE=0; JCODE="nimpa"; LTYPE="EJOURNAL" ;;
 	nimpb | nimb | NIMPB | NIMB) SD=1;HREFTYPE=0; JCODE="nimpb"; LTYPE="EJOURNAL" ;;
@@ -200,22 +205,23 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	paphs | PAPhS | PAPHS )   HREFTYPE=1; JCODE="paphs"; LTYPE="EJOURNAL" ;;
 	pasp | PASP )   HREFTYPE=1; JCODE="pasp"; LTYPE="ARTICLE" ;;
 	pce | PCE ) SD=1;HREFTYPE=0; JCODE="pce"; LTYPE="EJOURNAL" ;;
-	phrv | pr | PhRv | PHRV )   PROLA=1; HREFTYPE=1; JCODE="phrv"; LTYPE="EJOURNAL" ;;
+	phrv | pr | PhRv | PHRV )   AIP=1; HREFTYPE=1; JCODE="phrv"; LTYPE="EJOURNAL" ;;
 	pmag | PMag | PMAG )   HREFTYPE=1; JCODE="pmag"; LTYPE="EJOURNAL" ;;
 	ppsa | PPSA  )   HREFTYPE=1; JCODE="ppsa"; LTYPE="EJOURNAL" ;;
 	ppsb | PPSB  )   HREFTYPE=1;JCODE="ppsb";LTYPE="EJOURNAL" ;;
 	pos | POS | PoS )  HREFTYPE=1; JCODE="pos"; LTYPE="ARTICLE" ;;
-	pra | phrva | PRA )   PROLA=1;HREFTYPE=1;JCODE="phrva";LTYPE="EJOURNAL" ;;
-	prb | phrvb | PRB )   PROLA=1;HREFTYPE=1;JCODE="phrvb";LTYPE="EJOURNAL" ;;
-	prc | phrvc | PRC )   PROLA=1;HREFTYPE=1;JCODE="phrvc";LTYPE="EJOURNAL" ;;
-	prd | phrvd | PRD )   PROLA=1;HREFTYPE=1;JCODE="phrvd";LTYPE="EJOURNAL" ;;
-	pre | phrve | PRE )   PROLA=1;HREFTYPE=1;JCODE="phrve";LTYPE="EJOURNAL" ;;
+	pra | phrva | PRA )   AIP=1;HREFTYPE=1;JCODE="phrva";LTYPE="EJOURNAL" ;;
+	prb | phrvb | PRB )   AIP=1;HREFTYPE=1;JCODE="phrvb";LTYPE="EJOURNAL" ;;
+	prc | phrvc | PRC )   AIP=1;HREFTYPE=1;JCODE="phrvc";LTYPE="EJOURNAL" ;;
+	prd | phrvd | PRD )   AIP=1;HREFTYPE=1;JCODE="phrvd";LTYPE="EJOURNAL" ;;
+	pre | phrve | PRE )   AIP=1;HREFTYPE=1;JCODE="phrve";LTYPE="EJOURNAL" ;;
 	phlb | physlb | PhLB )   SD=1;HREFTYPE=0;JCODE="phlb";LTYPE="EJOURNAL" ;;
-	prl | phrvl | PRL )   PROLA=1;HREFTYPE=1;JCODE="phrvl";LTYPE="EJOURNAL" ;;
+	prl | phrvl | PRL )   AIP=1;HREFTYPE=1;JCODE="phrvl";LTYPE="EJOURNAL" ;;
+	prpnp | PrPNP | ppnp | PPNP) SD=1;HREFTYPE=0; JCODE="prpnp"; LTYPE="EJOURNAL" ;;
 	pthph | PThPh | PTHPH )   HREFTYPE=1;JCODE="pthph";LTYPE="EJOURNAL" ;;
 	pthps | PThPS | PTHPS )   HREFTYPE=1;JCODE="pthps";LTYPE="EJOURNAL" ;;
 	rsci | RScI )  HREFTYPE=0; JCODE="rsci"; LTYPE="EJOURNAL" ;;
-	rvmp | RvMP | RVMP ) PROLA=1;HREFTYPE=1;JCODE="rvmp";LTYPE="EJOURNAL" ;;
+	rvmp | RvMP | RVMP ) AIP=1;HREFTYPE=1;JCODE="rvmp";LTYPE="EJOURNAL" ;;
 	science | SCIENCE ) HREFTYPE=1;JCODE="science";LTYPE="ARTICLE" ;;
 	scoa | SCoA| SCOA )  HREFTYPE=1;JCODE="scoa";LTYPE="ARTICLE" ;;
 	va | VA | ViA | via) SD=1;HREFTYPE=0; JCODE="va"; LTYPE="EJOURNAL" ;;
@@ -385,7 +391,7 @@ FetchBibtex() { # USING ADS TO GET THE BIBTEX
 }
 
 MakeLynxCmd () {
-	# this is a workaround for the PROLA
+	# this is a workaround for the AIP
 	# basically, instead of using wget, we are going to make a download script for lynx
 	if [ -e $LYNXCMD ];then
 		rm "$LYNXCMD"
@@ -459,7 +465,7 @@ DownloadPdf () {
 			ADSLINK=`echo $ADSLINK | sed 's/\&/\\\&/g'`
 			echo "Science Direct hack"
 			ssh "$USER@$HOST" elinks -source "$ADSLINK" > $TMPURL
-		elif [[ "$Rflag" && "$PROLA" ]]; then # If it IS Remote AND PROLA
+		elif [[ "$Rflag" && "$AIP" ]]; then # If it IS Remote AND AIP
 			# the remote shell will be confused by & in a URL, so we need to make it a literal
 			ADSLINK=`echo $ADSLINK | sed 's/\&/\\\&/g'`
 		fi
@@ -518,8 +524,8 @@ DownloadPdf () {
 			# the remote shell will be confused by & in a URL, so we need to make it a literal
 			FULLPATH=`echo $FULLPATH | sed 's/\&/\\\&/g'`
 			#echo "ssh "$USER@$HOST" wget -U 'Mozilla/5.0' -O $TMP/$FILENAME $FULLPATH" # works
-			# first test of PROLA workaround -- seems to work!
-			if [[ "$PROLA" || "$SD" ]]; then
+			# first test of AIP workaround -- seems to work!
+			if [[ "$AIP" || "$SD" ]]; then
 				MakeLynxCmd
 				echo "Copying lynx command to the ssh host..."
 				scp "$LYNXCMD" "$USER@$HOST:$LYNXCMD"
@@ -536,8 +542,8 @@ DownloadPdf () {
 			#"ssh $USER@$HOST wget -U Mozilla/5.0 $FULLPATH -O /tmp/goatface.pdf" # no such file or directory
 			#"$WGET -U 'Mozilla/5.0' $FULLPATH -O$TMP/$FILENAME"
 		else # Remote flag is off
-			# first test of PROLA workaround -- seems to work!
-			if [[ "$PROLA" || "$SD" ]]; then
+			# first test of AIP workaround -- seems to work!
+			if [[ "$AIP" || "$SD" ]]; then
 				MakeLynxCmd
 				lynx -accept_all_cookies -cmd_script="$LYNXCMD" "$ADSLINK"
 			else
@@ -619,6 +625,7 @@ jval=$(zenity  --width=400  --height=703 --title "getpaper" --list  --text "Choo
 	FALSE apj "The Astrophysical Journal" \
 	FALSE apjl "The Astrophysical Journal (Letters)" \
 	FALSE apjs "The Astrophysical Journal (Supplement Series)" \
+	FALSE arnps "Annual Review of Nuclear and Particle Science" \
 	FALSE aujph "Australian Journal of Physics" \
 	FALSE baas "Bulletin of the American Astronomical Society" \
 	FALSE bsrsl "Bulletin de la Societe Royale des Sciences de Liege" \
@@ -636,6 +643,7 @@ jval=$(zenity  --width=400  --height=703 --title "getpaper" --list  --text "Choo
 	FALSE metro "Metrologia" \
 	FALSE natur "Nature" \
 	FALSE natph "Nature Physics" \
+	FALSE newar "New Astronomy Reviews" \
 	FALSE nimpa "Nuclear Instruments and Methods (1983 and earlier)" \
 	FALSE nimpa "Nuclear Instruments and Methods in Physics Research A" \
 	FALSE nimpb "Nuclear Instruments and Methods in Physics Research B" \
@@ -657,6 +665,7 @@ jval=$(zenity  --width=400  --height=703 --title "getpaper" --list  --text "Choo
 	FALSE pre "Physical Review E" \
 	FALSE phlb "Physics Letters B" \
 	FALSE prl "Physical Review Letters" \
+	FALSE prpnp "Progress in Particle and Nuclear Physics" \
 	FALSE pthph "Progress of Theoretical Physics" \
 	FALSE pthps "Progress of Theoretical Physics Supplement" \
 	FALSE rsci "Review of Scientific Instruments" \
