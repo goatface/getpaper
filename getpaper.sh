@@ -1,6 +1,7 @@
 #!/bin/bash
-# getpaper v 0.979
-# Copyright 2010-2013  daid kahl
+# getpaper
+VERSION=1.0
+# Copyright 2010-2015  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
 #
@@ -16,71 +17,218 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with getpaper.  If not, see <http://www.gnu.org/licenses/>.
-InitVariables () {
-	# USER DEFINED VARIABLES
-	PDFVIEWER=/usr/bin/xpdf # popular alternatives: /usr/bin/acroread /usr/bin/evince /usr/bin/okular /usr/bin/epdfview
-	#PDFVIEWER=/usr/bin/open # Mac OS X
-	PRINTCOMMAND="/usr/bin/lpr -P CNS205 -o Duplex=DuplexNoTumble" # you can attempt to simply replace CNS205 with your printer name
-	LIBPATH=$HOME/library # Normal GNU/Linux style
-	#LIBPATH=$HOME/Documents/library # Mac OS X
-	# some of daid's personal ones...I want to make this in a config file in the future!
-	#LIBPATH=$HOME/public_html/crib-new/library # CRIB website
-	#LIBPATH=$HOME/librarytest # debugging
-	#LIBPATH=$HOME/physics/cns-citations # CNS Citations
-	#BIBFILE=$LIBPATH/cameron.bib # daid's 1957 Cameron bib
-	BIBFILE=$LIBPATH/library.bib # normal for all cases
-	TMP=/tmp
-	# INTERNAL TEMPORARY FILES -- MAY CHANGE BUT NOT NECESSARY
-	TMPBIBCODE=$TMP/.getpaper_bibcode
-	TMPBIBTEX=$TMP/.getpaper_bibtex
-	TMPBIBCODELIST=$TMP/.getpaper_bibcodelist
-	TMPURL=$TMP/.getpaper_url
-	ERRORFILE=$TMP/.getpaper_error
-	LYNXCMD=$TMP/.getpaper_lynxcmd
-	# temporary storage for input information...whereever you want
-	INPUT=$TMP/refinput.txt
+
+# Initialize variables
+# Read in or create .getpaperrc
+function InitVariables () {
+	CONFIG_FILE=$HOME/.getpaperrc
+	# Check for configuration file
+	if [ ! -e $CONFIG_FILE ];then
+	# If no config file, generate a default one as follows:
+printf "# getpaper config file
+# USER DEFINED VARIABLES
+# Program to open PDF files
+PDFVIEWER=/usr/bin/evince 
+#PDFVIEWER=/usr/bin/acroread
+#PDFVIEWER=/usr/bin/okular
+#PDFVIEWER=/usr/bin/epdfview
+# Mac OS X
+#PDFVIEWER=/usr/bin/open 
+# Default printer to use
+PRINTER=
+PRINTCOMMAND=\"/usr/bin/lpr -P \$PRINTER -o Duplex=DuplexNoTumble\" 
+# Information for ssh, if you have a default server
+#USER=
+#HOST=
+# Library path for getpaper
+# Normal GNU/Linux style
+LIBPATH=\$HOME/library 
+# Mac OS X
+#LIBPATH=\$HOME/Documents/library 
+# Bibliography file for getpaper
+BIBFILE=\$LIBPATH/library.bib # normal for all cases
+# temporary directory to use during execution
+TMP=/tmp
+# INTERNAL TEMPORARY FILES -- MAY CHANGE BUT NOT NECESSARY
+TMPBIBCODE=\$TMP/.getpaper_bibcode
+TMPBIBTEX=\$TMP/.getpaper_bibtex
+TMPBIBCODELIST=\$TMP/.getpaper_bibcodelist
+TMPURL=\$TMP/.getpaper_url
+ERRORFILE=\$TMP/.getpaper_error
+LYNXCMD=\$TMP/.getpaper_lynxcmd
+# temporary storage for input information...whereever you want
+INPUT=\$TMP/.getpaper_refinput.txt" > $CONFIG_FILE
+	echo "Created new config file at $CONFIG_FILE"
+	echo "Please check the settings, and re-run $0"
+	exit
+	fi
+	# Get user inputs
+	source $CONFIG_FILE
 
 	# internal variables -- do not change!
 	ERROR=0
-	if [ "$Rflag" ];then # Remote flag variables
-		USER=`echo $Rval | sed 's/@.*//'`
-		HOST=`echo $Rval | sed 's/.*@//'`
-		#echo "Your Rval is $Rval"
-		# this command is very oddly broken and gives all kinds of errors that are related to the specific way its quoted...fix later.
-		#WGET="ssh \"$USER@$HOST\" wget"
-	#else # we don't need an else until the WGET variable can work to ssh wget
-		#WGET="wget"
-	fi
 }
 
-Usage () {
-	printf "getpaper version 0.97\nDownload, bibtex, print, and/or open papers based on reference!\n"
-	printf "Copyright 2010-2012 daid - www.goatface.org\n"
-	printf "Usage: %s: [-q] [-b] [-f file] [-j journal] [-v volume] [-p page] [-c \"comments\"] [-P] [-O] [-R user@host]\n" $0
-	printf "Description of options:\n"
-	printf "  -f <file>\t: getpaper reads data from <file> where each line corresponds to an article as:\n"
-	printf "\t\t\tPrinciple:\n\t\t\t\tJOURNAL\tVOLUME\tPAGE\tCOMMENTS\n"
-	printf "\t\t\tExample:\n\t\t\t\tprl\t99\t052502\t12C+alpha 16N RIB\n"
-	printf "\t\t\t(Comments are used in the bibtex for the user's need.)\n"
-	printf "  -q \t\t: query (no downloads or bibtex modification)\n"
-	printf "  -b \t\t: bibtex only (no downloads)\n"
-	printf "  -j <string>\t: <string> is the journal title abbreviation\n"
-	printf "  -j help\t: Output a list of available journals and abbreviations.\n"
-	printf "  -v <int>\t: <int> is the journal volume number\n"
-	printf "  -p <int>\t: <int> is the article first page\n"
-	printf "  -c \"<string>\"\t: <string> is any comments, in quotes, including spaces\n"
-	printf "  -P \t\t: Printing is turned on\n"
-	printf "  -O \t\t: Open the paper(s) for digital viewing\n"
-	printf "  -R user@host\t: Remote download through ssh to user@host\n"
-	printf "(Note: -f option supersedes the -j -v -p options.)\n"
-	printf "\nIf zenity is installed, getpaper will enter GUI mode if no options are passed\n"
-	exit 1
+# Tell a user how to invoke this script
+function Usage()
+{
+cat <<-ENDOFMESSAGE
+getpaper version $VERSION
+Download, add bibtex, query bibtex, strip propaganda, print, and/or open papers based on reference!
+Copyright 2010-2015 daid kahl - www.goatface.org
+Usage: 
+  $0: [-h] [-q] [-b] [-f file] [-j journal] [-v volume] [-p page] [-c "comments"] [-P] [-O] [-R [user@host]]
+options:
+  --help   
+  -h		: display this message
+  --file <file>
+  -f <file>	: getpaper reads data from <file> where each line corresponds to an article as:
+  			Principle:
+  				JOURNAL	VOLUME	PAGE	COMMENTS
+  			Example:
+  				prl	99	052502	12C+alpha 16N RIB
+  			(Comments are used in the bibtex for the user's need.)
+  --query
+  -q 		: query (no downloads or bibtex modification)
+  		  Will inform if the reference is valid, check if you have the bibtex, paper
+		  Can open and/or print if called with those options
+  --bibtex
+  -b 		: bibtex only (no downloads)
+  --journal <string>
+  -j <string>	: <string> is the journal title abbreviation
+   		: If <string> is 'help' or 'list', output journal list and codes.
+  --volume <int>
+  -v <int>	: <int> is the journal volume number
+  --page <int>
+  -p <int>	: <int> is the article first page
+  --comment
+  -c "<string>": <string> is any comments, in quotes, including spaces
+  --print
+  -P 		: Printing is turned on
+  --open
+  -O 		: Open the paper(s) for digital viewing
+  --remote <user@host>
+  -R <user@host>: Remote download through ssh to <user@host>
+  		  <user@host> can be omitted if USER and HOST are defined in .getpaperrc
+  (NOTE: -f option supersedes the -j -v -p options.)
+If zenity is installed, getpaper will enter GUI mode if no options are passed
+ENDOFMESSAGE
+    exit 1
 }
 
-CheckDeps () { # dependency checking
+# Fuck off and...
+function Die()
+{
+    echo "$*"
+    exit 1
+}
+
+# Parse and set relevant options
+function GetOpts() {
+# basic style from http://stackoverflow.com/questions/17016007/bash-getopts-optional-arguments
+# dislike the builtin getopts
+	bflag=""
+	qflag=""
+	jflag=""
+	vflag=""
+	pflag=""
+	cflag=""
+	fflag=""
+	bflag=""
+	Pflag=""
+	Oflag=""
+	Rflag=""
+	argv=()
+	while [ $# -gt 0 ]
+	do
+	    opt=$1
+	    shift
+	    case ${opt} in
+	        -b|--bibtex)
+	    	bflag=1
+	            ;;
+	        -q|--query)
+	    	qflag=1
+	            ;;
+	        -P|--print)
+	    	Pflag=1
+	            ;;
+	        -O|--open)
+	    	Oflag=1
+	            ;;
+	        -h|--help)
+	            Usage;;
+	        -c|--comment)
+	            if [ $# -eq 0 -o "${1:0:1}" = "-" ]; then
+	                Die "The ${opt} option requires an argument."
+	            fi
+	            cval="$1"
+	    	cflag=1
+	            shift
+	            ;;
+	        -f|--file)
+	            if [ $# -eq 0 -o "${1:0:1}" = "-" ]; then
+	                Die "The ${opt} option requires an argument."
+	            fi
+	            fval="$1"
+	    	fflag=1
+	            shift
+	            ;;
+	        -j|--journal)
+	            if [ $# -eq 0 -o "${1:0:1}" = "-" ]; then
+	                Die "The ${opt} option requires an argument."
+	            fi
+	            jval="$1"
+	    	jflag=1
+	    	shift
+	            ;;
+	        -v|--volume)
+	            if [ $# -eq 0 -o "${1:0:1}" = "-" ]; then
+	                Die "The ${opt} option requires an argument."
+	            fi
+	            vval="$1"
+	    	vflag=1
+	            shift
+	            ;;
+	        -p|--page)
+	            if [ $# -eq 0 -o "${1:0:1}" = "-" ]; then
+	                Die "The ${opt} option requires an argument."
+	            fi
+	            pval="$1"
+	    	pflag=1
+	            shift
+	            ;;
+	        -R|--remote)
+		# This is a case where getopts builtin will fail
+	            if [ $# -eq 0 -o "${1:0:1}" = "-" ] && [ ! "$HOST" -o ! "$USER" ] ; then
+	    	    Die "The ${opt} option requires an argument."
+	            fi
+	            Rval="$1"
+	    	    Rflag=1
+	    	    if [ ! "$USER" ]; then 
+	    		USER=`echo $Rval | sed 's/@.*//'`
+	    	    fi
+	    	    if [ ! "$HOST" ]; then
+	    		HOST=`echo $Rval | sed 's/.*@//'`
+	    	    fi
+		    printf "User is $USER, Host is $HOST for ssh Remote download\n"
+	            shift
+	            ;;
+	        *)
+	            if [ "${opt:0:1}" = "-" ]; then
+	                Die "${opt}: unknown option."
+	            fi
+	            argv+=(${opt});;
+	    esac
+	done 
+}
+
+# Check the dependencies to ensure getpaper can run
+function CheckDeps () {
 	which lynx &>/dev/null || { printf "getpaper requires lynx but it's not in your PATH or not installed.\n\t(see http://lynx.isc.org/)\nAborting.\n" >&2; exit 1; }
 	which wget &>/dev/null || { printf "getpaper requires wget but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/wget/)\nAborting.\n" >&2; exit 1; }
 	which pdfinfo &>/dev/null || { printf "getpaper requires pdfinfo but it's not in your PATH or not installed.\n\t(see http://poppler.freedesktop.org/)\nAborting.\n" >&2; exit 1; }
+	which pdftk &>/dev/null || { printf "getpaper requires pdftk but it's not in your PATH or not installed.\n\t(see http://www.pdflabs.com/tools/pdftk-the-pdf-toolkit/)\nAborting.\n" >&2; exit 1; }
 	which grep &>/dev/null || { printf "getpaper requires grep but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/grep/)\nAborting.\n" >&2; exit 1; }
 	which sed &>/dev/null || { printf "getpaper requires sed but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/sed/)\nAborting.\n" >&2; exit 1; }
 	which awk &>/dev/null || { printf "getpaper requires awk but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/gawk/)\nAborting.\n" >&2; exit 1; }
@@ -92,12 +240,14 @@ CheckDeps () { # dependency checking
  
 }
 
-Error () { # keep track of any failures
+# Track any and all failures for reporting
+function Error () {
 	ERROR=1
 	printf "$JOURNAL\t$VOLUME\t$PAGE\n" >> $ERRORFILE
 }
 
-JournalList() {
+# Present journal database
+function JournalList() {
 	printf "Journals in database:\nCODE\tNAME\n"
 	printf "aa\tAstronomy & Astrophysics\n"
 	printf "aipc\tAmerican Institute of Physics (Conference Proceedings)\n"
@@ -120,6 +270,7 @@ JournalList() {
 	printf "epjh\tEuropean Physical Journal H\n"
 	printf "gecoa\tGeochimica et Cosmochimica Acta\n"
 	printf "jphg\tJournal of Physics G: Nuclear and Particle Physics\n"
+	printf "jpsj\tJournal of the Physical Society of Japan\n"
 	printf "mnras\tMonthly Notices of the Royal Astronomical Society\n"
 	printf "msrsl\tMemoires of the Societe Royale des Sciences de Liege\n"
 	printf "metro\tMetrologia\n"
@@ -145,6 +296,7 @@ JournalList() {
 	printf "prd\tPhysical Review D\n"
 	printf "pre\tPhysical Review E\n"
 	printf "phlb\tPhysics Letters B\n"
+	printf "pasj\tPublications of the Astronomical Society of Japan\n"
 	printf "pasp\tPublications of the Astronomical Society of the Pacific\n"
 	printf "prl\tPhysical Review Letters\n"
 	printf "prpnp\tProgress in Particle and Nuclear Physics\n"
@@ -158,7 +310,8 @@ JournalList() {
 	printf "zphy\tZeitschrift fur Physik\n"
 }
 
-SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be sure to understand and test the meaning of the variables
+# Set the proper variables so getpaper can determine what to do
+function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be sure to understand and test the meaning of the variables
 	# varibales used:
 	# 		JCODE : ADS journal code (case insensitive); see http://adsabs.harvard.edu/abs_doc/journal_abbr.html but be careful with things like "A&A"
 	#		LTYPE : ADS system variable; EJOURNAL is externally hosted; ARTICLE is locally hosted
@@ -168,9 +321,11 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	#				2 : local file name given for href
 	AIP= # don't change this!  Initalizes a variable for AIP
 	SD= # don't change this!  Initalizes a variable for SD
+	PROPAGANDA=0 # don't change
+	NATURE=0 # don't change
 	case "$JOURNAL" in
 	aa  | AA ) HREFTYPE=1; JCODE="a%26a"; LTYPE="ARTICLE" ;;
-	aipc | AIPC )  AIP=1; HREFTYPE=1; JCODE="aipc"; LTYPE="EJOURNAL" ;;
+	aipc | AIPC )  AIP=1; HREFTYPE=1; JCODE="aipc"; LTYPE="EJOURNAL" ; PROPAGANDA=1 ;;
 	aj |AJ )  HREFTYPE=1; JCODE="aj"; LTYPE="ARTICLE" ;;
 	astl | AstL )  HREFTYPE=1; JCODE="astl"; LTYPE="EJOURNAL" ;;
 	anap |AnAp )  HREFTYPE=1; JCODE="anap"; LTYPE="ARTICLE" ;;
@@ -189,11 +344,12 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	epjst | EPJST )  HREFTYPE=1; JCODE="epjst"; LTYPE="EJOURNAL" ;;
 	epjh | EPJH )  HREFTYPE=1; JCODE="epjh"; LTYPE="EJOURNAL" ;;
 	gecoa | GeCoA | GECOA )   SD=1;HREFTYPE=0;JCODE="gecoa";LTYPE="EJOURNAL" ;;
-	jphg | JPhG | jphyg | JPhyG )  HREFTYPE=1; JCODE="jphg"; LTYPE="EJOURNAL" ;;
+	jphg | JPhG | jphyg | JPhyG )  HREFTYPE=1; JCODE="jphg"; LTYPE="EJOURNAL" ;PROPAGANDA=1;;
+	jpsj | JPSJ  )  HREFTYPE=1; JCODE="jpsj"; LTYPE="EJOURNAL" ;;
 	mnras | MNRAS ) HREFTYPE=1; JCODE="mnras"; LTYPE="ARTICLE" ;;
 	msrsl | MSRSL  )   HREFTYPE=1; JCODE="msrsl"; LTYPE="ARTICLE" ;;
 	metro | Metro )  HREFTYPE=1; JCODE="metro"; LTYPE="EJOURNAL" ;;
-	natur | Nature | Natur )  HREFTYPE=1; JCODE="natur"; LTYPE="EJOURNAL" ;;
+	natur | nature | Nature | Natur ) NATURE=1; HREFTYPE=1; JCODE="natur"; LTYPE="EJOURNAL" ;;
 	natph | NatPh )  HREFTYPE=1; JCODE="natph"; LTYPE="EJOURNAL" ;;
 	newar | NewAR | NEWAR )   SD=1;HREFTYPE=0;JCODE="newar";LTYPE="EJOURNAL" ;;
 	nim | nucim | NIM | NucIM) SD=1;HREFTYPE=0; JCODE="nucim"; LTYPE="EJOURNAL" ;;
@@ -203,6 +359,7 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	nuphb | npb | NPB | nucphysb ) SD=1;HREFTYPE=0; JCODE="nuphb"; LTYPE="EJOURNAL" ;;
 	obs | OBS )  HREFTYPE=1; JCODE="obs"; LTYPE="ARTICLE" ;;
 	paphs | PAPhS | PAPHS )   HREFTYPE=1; JCODE="paphs"; LTYPE="EJOURNAL" ;;
+	pasj | PASJ )   HREFTYPE=1; JCODE="pasj"; LTYPE="ARTICLE" ;;
 	pasp | PASP )   HREFTYPE=1; JCODE="pasp"; LTYPE="ARTICLE" ;;
 	pce | PCE ) SD=1;HREFTYPE=0; JCODE="pce"; LTYPE="EJOURNAL" ;;
 	phrv | pr | PhRv | PHRV )   AIP=1; HREFTYPE=1; JCODE="phrv"; LTYPE="EJOURNAL" ;;
@@ -225,7 +382,7 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	science | SCIENCE ) HREFTYPE=1;JCODE="science";LTYPE="ARTICLE" ;;
 	scoa | SCoA| SCOA )  HREFTYPE=1;JCODE="scoa";LTYPE="ARTICLE" ;;
 	va | VA | ViA | via) SD=1;HREFTYPE=0; JCODE="va"; LTYPE="EJOURNAL" ;;
-	zphy | ZPhy| ZPHY )  HREFTYPE=1;JCODE="zphy";LTYPE="EJOURNAL" ;;
+	zphy | ZPhy| ZPHY )  AIP=1;HREFTYPE=1;JCODE="zphy";LTYPE="EJOURNAL" ;;
 	* ) 
 	        printf "ERROR: Journal code $JOURNAL not in database, skipping...\n"
 		Error
@@ -235,9 +392,8 @@ SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, but be su
 	esac
 }
 
-
-TmpCleanUp () {
-	#tmp cleanup
+# Delete any and all temporary files
+function TmpCleanUp () {
 	if [ -e $INPUT ];then
 		rm "$INPUT"
 	fi
@@ -261,7 +417,8 @@ TmpCleanUp () {
 	fi
 }
 
-ParseJVP () { # Parse the Journal/Volume/Page of submission
+# For reading in a file
+function ParseJVP () { # Parse the Journal/Volume/Page of submission
 	JOURNAL=`printf "$inline"|awk '{printf $1}'`
 	VOLUME=`printf "$inline"|awk '{printf $2}'`
 	PAGE=`printf "$inline"|awk '{printf $3}'`
@@ -289,7 +446,8 @@ ParseJVP () { # Parse the Journal/Volume/Page of submission
 	printf "Processing: JOURNAL $JOURNAL VOLUME $VOLUME PAGE $PAGE\n"
 }
 
-FetchBibtex() { # USING ADS TO GET THE BIBTEX
+# Download the Bibtex from Harvard's wonderful ADS
+function FetchBibtex() { 
 	if [ ! -d $LIBPATH ]; then
 		printf "$LIBPATH does not exist!\nCreating your library directory.\n"
 		mkdir $LIBPATH
@@ -369,7 +527,7 @@ FetchBibtex() { # USING ADS TO GET THE BIBTEX
 	YEAR=`echo "$BIBCODE" | head -c 4`
 	if ( grep "$BIBCODE" "$BIBFILE" > /dev/null ); then
 		echo "The article $BIBCODE is in your library!"
-		if [ !$qflag ];then
+		if [ ! "$qflag" ];then
 			echo "$BIBFILE"
 			echo "Skipping..."
 			continue
@@ -390,8 +548,9 @@ FetchBibtex() { # USING ADS TO GET THE BIBTEX
 	fi
 }
 
-MakeLynxCmd () {
-	# this is a workaround for the AIP
+# Creation of a script for lynx
+function MakeLynxCmd () {
+	# this is a workaround for any hosts that attempt to deny wget
 	# basically, instead of using wget, we are going to make a download script for lynx
 	if [ -e $LYNXCMD ];then
 		rm "$LYNXCMD"
@@ -429,9 +588,12 @@ MakeLynxCmd () {
 	echo "key y" >> "$LYNXCMD" 
 }
 
-DownloadPdf () {
-	FILEPATH="$LIBPATH/$PAPERTYPE/$YEAR"
-	FILENAME="$JOURNAL.$VOLUME.$PAGE.pdf"
+# Download the paper
+# This is the main work of the script
+# Different databases have different formats
+# Many of them don't like scripting even if it in no way violates the TOS
+# I apologize for all the cludges and exceptions required for smooth operation
+function DownloadPdf () {
 	if [ -e $FILEPATH/$FILENAME ];then
 		echo "The paper is already downloaded!"
 		echo "$FILEPATH/$FILENAME"
@@ -455,19 +617,34 @@ DownloadPdf () {
 		#	But we cannot switch default to elinks because of it's lack of -base option
 		#	However, the lynx -base option is only required for HREFTYPE non-zero
 		#	In other words, a terrible hack JUST for ScienceDirect yet again...
-		if [[ !$Rflag ]];then # If it's isn't both Remote and ScienceDirect, do...
-			lynx -base -source -connect_timeout=20 "$ADSLINK" > $TMPURL
-			#read_timeout is a newer feature many systems don't seem to have...added to lynx 2.8.7 2009.7.5
-			#lynx -base -source -read_timeout=20 "$ADSLINK" >$TMPURL 
+		
+		#if [[ $Rflag -eq 0 || "$HREFTYPE" -ne 0 ]];then # If it's isn't both Remote and ScienceDirect, do...
+		#	lynx -base -source -connect_timeout=20 "$ADSLINK" > $TMPURL
+		#	#read_timeout is a newer feature many systems don't seem to have...added to lynx 2.8.7 2009.7.5
+		#	#lynx -base -source -read_timeout=20 "$ADSLINK" >$TMPURL 
 		# I think these things are not used? 07 May 2012 18:24:42 
-		elif [[ "$Rflag" && "$HREFTYPE" -eq 0 ]]; then # If it IS Remote AND ScienceDirect...
+		#elif [[ "$Rflag" && "$HREFTYPE" -eq 0 ]]; then # If it IS Remote AND ScienceDirect...
+		#	# the remote shell will be confused by & in a URL, so we need to make it a literal
+		#	ADSLINK=`echo $ADSLINK | sed 's/\&/\\\&/g'`
+		#	echo "Science Direct hack"
+		#	ssh "$USER@$HOST" elinks -source "$ADSLINK" > $TMPURL
+		
+
+		#	A *new* problem from SD 28 Jun 2014 07:15:44 
+		#	They use JavaScript to generate a redirect, since command-line browsers cannot do JS
+		#	Once we get the source from ADS, we can nab the redirect URL from a lynx source dump
+		#       Then, magically, a slight hack on the original way works again
+		if [ "$SD" ];then
+			lynx -source -connect_timeout=20 "$ADSLINK" > $TMPURL
+			TMPURL2=$(grep 'name="redirectURL"' $TMPURL | sed 's/.*value="//' | sed 's/".*//')
+			lynx -source "$TMPURL2" > $TMPURL
+			echo "Science (in)Direct hack"
+		#elif [[ "$Rflag" && "$AIP" ]]; then # If it IS Remote AND AIP
+			# I think we don't need this anymore 04 Dec 2014 17:10:26 
 			# the remote shell will be confused by & in a URL, so we need to make it a literal
-			ADSLINK=`echo $ADSLINK | sed 's/\&/\\\&/g'`
-			echo "Science Direct hack"
-			ssh "$USER@$HOST" elinks -source "$ADSLINK" > $TMPURL
-		elif [[ "$Rflag" && "$AIP" ]]; then # If it IS Remote AND AIP
-			# the remote shell will be confused by & in a URL, so we need to make it a literal
-			ADSLINK=`echo $ADSLINK | sed 's/\&/\\\&/g'`
+			#ADSLINK=`echo $ADSLINK | sed 's/\&/\\\&/g'`
+			#ssh "$USER@$HOST" elinks -source "$ADSLINK" > $TMPURL
+			#echo "Debugging..."
 		fi
 		if [ $HREFTYPE -eq 0 ];then
 			#full paths given for href
@@ -478,9 +655,10 @@ DownloadPdf () {
 			#emulate 2g as sed, where goat is regex: sed ':a;s/\([^ ]*goat.*[^\\]\)goat\(.*\)/\1replace\2/;ta'
 			# the following is no longer valid daid 05 Mar 2011 03:47:48 
 			#LOCALPDF=`grep PDF $TMPURL | sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | grep "origin=search" | head -n 1`
-			# this will get us the right URL, but wget has a hard time following it from some 404 issues, so we just use lynx instead
+			# this will get us the right URL; at one point we had to script lynx from wget 404, but now wget works again 
 			LOCALPDF=`grep pdfurl $TMPURL | \
-				head -n 1 | sed 's/pdfurl=\"//' | sed 's/\".*//'`
+				head -n 1 | sed 's/.*pdfurl=\"//' | sed 's/\".*//'`
+				#head -n 1 | sed 's/pdfurl=\"//' | sed 's/\".*//'` # old one 28 Jun 2014 07:35:47, SD needs me to throw away leading
 				# another old style for SD 16 Jan 2012 21:19:49 
 				#sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
 				#sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//'`
@@ -492,7 +670,7 @@ DownloadPdf () {
 				sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | head -n 1`
 			fi
 		fi
-		if [ $HREFTYPE -eq 1 ];then
+		if [[ $HREFTYPE -eq 1 && $AIP -eq 0 ]];then # we should really make a flag for if wget is used...we don't need this if we use lynx
 			#domain omitted for href
 			BASEURL=`head -n 1 $TMPURL | sed 's/.*X-URL:\ //'|  sed 's,\(http://[^/]*\)/.*,\1,'`
 			LOCALPDF=`grep PDF $TMPURL | \
@@ -513,9 +691,19 @@ DownloadPdf () {
 	# we need to mask as Firefox or wget is denied access by error 403 sometimes
 	if [ $GUI -eq 1 ];then
 		if [ "$Rflag" ];then # Remote flag is on
-			ssh "$USER@$HOST" wget -U 'Mozilla/5.0' --progress=bar:force "$FULLPATH" -O"$TMP/$FILENAME" 2>&1 | (zenity --title "getpaper" --text "Downloading..." --progress --auto-close --auto-kill)
+			if [ $NATURE -eq 0 ];then
+				ssh "$USER@$HOST" wget -U 'Mozilla/5.0' --progress=bar:force "$FULLPATH" -O"$TMP/$FILENAME" 2>&1 | (zenity --title "getpaper" --text "Downloading..." --progress --auto-close --auto-kill)
+			elif [ $NATURE -eq 1 ];then
+				#  500 Internal Server Error avoided
+				ssh "$USER@$HOST" wget --header='Accept-Language: en-us,en' --progress=bar:force "$FULLPATH" -O"$TMP/$FILENAME" 2>&1 | (zenity --title "getpaper" --text "Downloading..." --progress --auto-close --auto-kill)
+			fi
 		else # Remote flag is off
-			wget -U 'Mozilla/5.0' --progress=bar:force "$FULLPATH" -O"$TMP/$FILENAME" 2>&1 | (zenity --title "getpaper" --text "Downloading..." --progress --auto-close --auto-kill)
+			if [ $NATURE -eq 0 ];then
+				wget -U 'Mozilla/5.0' --progress=bar:force "$FULLPATH" -O"$TMP/$FILENAME" 2>&1 | (zenity --title "getpaper" --text "Downloading..." --progress --auto-close --auto-kill)
+			elif [ $NATURE -eq 1 ];then
+				#  500 Internal Server Error avoided
+				wget --header='Accept-Language: en-us,en' --progress=bar:force "$FULLPATH" -O"$TMP/$FILENAME" 2>&1 | (zenity --title "getpaper" --text "Downloading..." --progress --auto-close --auto-kill)
+			fi
 		fi
 	else
 		if [ "$Rflag" ]; then # Remote flag is on
@@ -525,7 +713,8 @@ DownloadPdf () {
 			FULLPATH=`echo $FULLPATH | sed 's/\&/\\\&/g'`
 			#echo "ssh "$USER@$HOST" wget -U 'Mozilla/5.0' -O $TMP/$FILENAME $FULLPATH" # works
 			# first test of AIP workaround -- seems to work!
-			if [[ "$AIP" || "$SD" ]]; then
+			#if [[ "$AIP" || "$SD" ]]; then # SD reverts to the old style now?! 28 Jun 2014 07:50:40 
+			if [[ "$AIP" ]]; then
 				MakeLynxCmd
 				echo "Copying lynx command to the ssh host..."
 				scp "$LYNXCMD" "$USER@$HOST:$LYNXCMD"
@@ -533,7 +722,12 @@ DownloadPdf () {
 				echo "$ADSLINK"
 				ssh "$USER@$HOST" lynx -accept_all_cookies -cmd_script="$LYNXCMD" "$ADSLINK"
 			else
-				ssh "$USER@$HOST" wget -U 'Mozilla/5.0' -O "$TMP/$FILENAME" "$FULLPATH" # works
+				if [ $NATURE -eq 0 ];then
+					ssh "$USER@$HOST" wget -U 'Mozilla/5.0' -O "$TMP/$FILENAME" "$FULLPATH" # works
+				elif [ $NATURE -eq 1 ];then
+					#  500 Internal Server Error avoided
+					ssh "$USER@$HOST" wget --header='Accept-Language: en-us,en' -O "$TMP/$FILENAME" "$FULLPATH" # works
+				fi
 			fi
 			# things I used to test ssh
 			#ssh "$USER@$HOST" ls  # works 
@@ -543,23 +737,32 @@ DownloadPdf () {
 			#"$WGET -U 'Mozilla/5.0' $FULLPATH -O$TMP/$FILENAME"
 		else # Remote flag is off
 			# first test of AIP workaround -- seems to work!
-			if [[ "$AIP" || "$SD" ]]; then
+			#if [[ "$AIP" || "$SD" ]]; then
+			if [[ "$AIP" ]]; then # SD reverts to the old style now?! 28 Jun 2014 07:51:03 
 				MakeLynxCmd
 				lynx -accept_all_cookies -cmd_script="$LYNXCMD" "$ADSLINK"
 			else
 				#FULLPATH=`echo $FULLPATH | sed 's/\&/\\\&/g'` # testing to avoid wget "Scheme missing" error #cause 500 error for ApJ, etc
-				wget -U 'Mozilla/5.0' -O"$TMP/$FILENAME" "$FULLPATH"
+				if [ $NATURE -eq 0 ];then
+					wget -U 'Mozilla/5.0' -O"$TMP/$FILENAME" "$FULLPATH"
+				elif [ $NATURE -eq 1 ];then
+					#  500 Internal Server Error avoided
+					wget --header='Accept-Language: en-us,en' -O"$TMP/$FILENAME" "$FULLPATH"
+				fi
 			fi
 		fi
 	fi
 }
 
-AddBibtex () {
+# Add a bibtex entry to the local library
+function AddBibtex () {
 	while read -r line
 	do
 		if ( echo $line | grep "adsurl = " > /dev/null );then
 			echo "$line" >> "$BIBFILE"
-			echo "file = {:$LIBPATH/$PAPERTYPE/$YEAR/$FILENAME:PDF}," >> "$BIBFILE"
+			if [ -z $bflag ];then # Only do these things without the c(heck) flag and b(ibtex) flag
+				echo "file = {:$LIBPATH/$PAPERTYPE/$YEAR/$FILENAME:PDF}," >> "$BIBFILE"
+			fi
 		        echo "comment = {$COMMENTS}," >> "$BIBFILE"				    
 			#printf "$line\n" >> "$BIBFILE"
 			#printf "file = {:$LIBPATH/$PAPERTYPE/$YEAR/$FILENAME:PDF},\n" >> "$BIBFILE"
@@ -571,7 +774,9 @@ AddBibtex () {
 	done < $TMPBIBTEX
 }
 
-CheckDir () { # check the directory structure where we will keep the paper -- otherwise make the directories
+# Check the directory structure where we will keep the paper 
+# If it does not exist, recurrently make the directories
+function CheckDir () { 
 	if [ ! -d "$LIBPATH/$PAPERTYPE" ];then
 		mkdir "$LIBPATH/$PAPERTYPE"
 		printf "Made directory $LIBPATH/$PAPERTYPE\n"
@@ -582,17 +787,30 @@ CheckDir () { # check the directory structure where we will keep the paper -- ot
 	fi
 }
 
-Open () { # open a PDF
+# Some journals attach a header page with journal information, IP address etc
+# This is propaganda and not the academic content of interest
+# The function will strip the first page from the PDF file
+function StripPropaganda () { 
+	echo "Stripping propaganda and IP information from pdf file..."
+	cp -v "$TMP/$FILENAME" "$TMP/.getpaper_pdftk_in.pdf"
+	pdftk "$TMP/.getpaper_pdftk_in.pdf" cat 2-end output "$TMP/.getpaper_pdftk_out.pdf"
+	cp -v "$TMP/.getpaper_pdftk_out.pdf" "$TMP/$FILENAME"
+}
+
+# Merely open a PDF file
+function Open () {
 	$PDFVIEWER $FILEPATH/$FILENAME &
 }
 
-Print () { # print a PDF
+# Simply spool the PDF file to a printer
+function Print () {
 	printf "Printing...\n"
 	$PRINTCOMMAND $FILEPATH/$FILENAME
 }
 
-
-ErrorReport() { # report failures at the end, as lynx may induce screen scroll
+# Report any and all errors in download
+# Useful to call at the end of all operations, in case of screen scroll
+function ErrorReport() { 
 	if [ $ERROR -eq 1 ];then
 		printf "***********************************************\n"
 		printf "The following submission(s) failed to download:\n"
@@ -602,8 +820,12 @@ ErrorReport() { # report failures at the end, as lynx may induce screen scroll
 	fi
 }
 
-IsPdfValid () { # check if we downloaded a basically valid PDF
-	if ( pdfinfo $TMP/$FILENAME 2>&1 | grep "Error: May not be a PDF file" > /dev/null );then
+# It could be easy to mistakenly download junk
+# URL domain error, forbidden access of content, etc
+# Best to confirm the download item is a PDF file
+function IsPdfValid () { 
+	printf "Checking if PDF appears to be valid...\n"
+	if ( pdfinfo $TMP/$FILENAME 2>&1 | grep "Error: May not be a PDF file\|Syntax Warning: May not be a PDF file (continuing anyway)\|No such file or directory" > /dev/null );then
 		printf "Error in downloading the PDF\nMaybe you do not have access\nTerminating...\n"
 		printf "If you confirm the citation information, and the paper is also in ADS, check for a new version of getpaper:\n"
 		printf "\thttp://www.cns.s.u-tokyo.ac.jp/~daid/hack/getpaper.html\n"
@@ -614,7 +836,8 @@ IsPdfValid () { # check if we downloaded a basically valid PDF
 	fi
 }
 
-GUI () {
+# A very primative GUI in alpha testing mode
+function GUI () {
 
 jval=$(zenity  --width=400  --height=703 --title "getpaper" --list  --text "Choose a journal" --radiolist  --column "" --column "Code" --column "Publication Title"  \
 	FALSE aa "Astronomy & Astrophysics" \
@@ -638,6 +861,7 @@ jval=$(zenity  --width=400  --height=703 --title "getpaper" --list  --text "Choo
 	FALSE epjh "European Physical Journal H" \
 	FALSE gecoa "Geochimica et Cosmochimica Acta" \
 	FALSE jphg "Journal of Physics G: Nuclear and Particle Physics" \
+	FALSE jpsj "Journal of the Physical Society of Japan" \
 	FALSE mnras "Monthly Notices of the Royal Astronomical Society" \
 	FALSE msrsl "Memoires of the Societe Royale des Sciences de Liege" \
 	FALSE metro "Metrologia" \
@@ -651,6 +875,7 @@ jval=$(zenity  --width=400  --height=703 --title "getpaper" --list  --text "Choo
 	FALSE nuphb "Nuclear Physics B" \
 	FALSE obs "The Observatory" \
 	FALSE paphs "Proceedings of the American Philosophical Society" \
+	FALSE pasj "Publications of the Astronomical Society of Japan" \
 	FALSE pasp "Publications of the Astronomical Society of the Pacific" \
 	FALSE phrv "Physical Review" \
 	FALSE pce "Physics and Chemistry of the Earth" \
@@ -691,52 +916,13 @@ fi
 
 }
 
-# Main
-
-# FLAG READING FOR INPUT
-# we can remove this I think 15 Aug 2012 12:00:36 
-bflag=
-qflag=
-jflag=
-vflag=
-pflag=
-cflag=
-fflag=
-bflag=
-Pflag=
-Oflag=
-Rflag=
-
-while getopts bqj:v:p:f:c:POR: OPTION
-do
-    case $OPTION in
-    b)    bflag=1;;
-    c)    cflag=1
-    	  cval="$OPTARG";;
-    q)    qflag=1;;
-    f) 	  fflag=1
-    	  fval="$OPTARG";;
-    j)    jflag=1
-          jval="$OPTARG";;
-    v)    vflag=1
-          vval="$OPTARG";;
-    p)    pflag=1
-          pval="$OPTARG";;
-    P)    Pflag=1;;
-    O)    Oflag=1;;
-    R)    Rflag=1
-    	  Rval="$OPTARG";;
-    ? | *) Usage;;  
-    esac
-done
+# Main routine!
 
 InitVariables
+GetOpts $*
 CheckDeps
 TmpCleanUp
 
-if [ $Rflag ];then
-	printf "User is $USER, Host is $HOST for ssh Remote download\n"
-fi
 if [ -z $1 ];then
 	which zenity &>/dev/null || { Usage; }
 	GUI=1
@@ -744,8 +930,6 @@ if [ -z $1 ];then
 else
 	GUI=0
 fi
-
-
 
 # FLAG SETTING FOR INPUT
 if [ "$fflag" ]; then
@@ -796,10 +980,14 @@ while read inline
 do
 	ParseJVP
 	SetJournal
-	FetchBibtex	
+	FetchBibtex
+	# TO DO: Should get these dynamically from existing bibtex, in the case of --query...
+	FILEPATH="$LIBPATH/$PAPERTYPE/$YEAR"
+	FILENAME="$JOURNAL.$VOLUME.$PAGE.pdf"
 	if [[ -z $qflag  && -z $bflag ]];then # Only do these things without the c(heck) flag and b(ibtex) flag
 		DownloadPdf
 		if [ "$Rval" ];then
+			#echo "Debugging scp..."
 			printf "scp'ing downloaded PDF from temporary location on remote server: "
 			scp "$USER@$HOST:/$TMP/$FILENAME" "$TMP/$FILENAME"
 			echo "Removing the tmp file on the ssh host..."
@@ -808,14 +996,17 @@ do
         	IsPdfValid 
 		CheckDir
 
+		if [ $PROPAGANDA -eq 1 ];then
+			StripPropaganda
+		fi
+		
 		printf "Moving downloaded PDF from temporary location: "
 		mv -v "$TMP/$FILENAME" "$FILEPATH/$FILENAME"
 	fi
 	if [ -z $qflag ];then # Only do these things without the c(heck) flag
-
 		AddBibtex
 	fi
-	if [[ -z $qflag && -z $bflag ]];then # Only do these things without the c(heck) flag and b(ibtex) flag
+	if [ -z $bflag ];then # Only do these things without the c(heck) flag and b(ibtex) flag
 		if [ $GUI -eq 1 ];then
 			ans=$(zenity  --list  --title "getpaper" --text "Finished!" --checklist  --column "" --column "Do you want to:" FALSE "Open the pdf" FALSE "Print the pdf" --separator=":"); echo $ans
 		fi
