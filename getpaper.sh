@@ -76,8 +76,10 @@ cat <<-ENDOFMESSAGE
 getpaper version $VERSION
 Download, add bibtex, query bibtex, strip propaganda, print, and/or open papers based on reference!
 Copyright 2010-2015 daid kahl - www.goatface.org
+
 Usage: 
   $0: [-h] [-q] [-b] [-f file] [-j journal] [-v volume] [-p page] [-c "comments"] [-P] [-O] [-R [user@host]]
+
 options:
   --help   
   -h		: display this message
@@ -111,7 +113,9 @@ options:
   -R <user@host>: Remote download through ssh to <user@host>
   		  <user@host> can be omitted if USER and HOST are defined in .getpaperrc
   (NOTE: -f option supersedes the -j -v -p options.)
+
 If zenity is installed, getpaper will enter GUI mode if no options are passed
+
 ENDOFMESSAGE
     exit 1
 }
@@ -350,7 +354,7 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
 	msrsl | MSRSL  )   HREFTYPE=1; JCODE="msrsl"; LTYPE="ARTICLE" ;;
 	metro | Metro )  HREFTYPE=1; JCODE="metro"; LTYPE="EJOURNAL" ;;
 	natur | nature | Nature | Natur ) NATURE=1; HREFTYPE=1; JCODE="natur"; LTYPE="EJOURNAL" ;;
-	natph | NatPh )  HREFTYPE=1; JCODE="natph"; LTYPE="EJOURNAL" ;;
+	natph | NatPh )  AIP=1; HREFTYPE=1; JCODE="natph"; LTYPE="EJOURNAL" ;;
 	newar | NewAR | NEWAR )   SD=1;HREFTYPE=0;JCODE="newar";LTYPE="EJOURNAL" ;;
 	nim | nucim | NIM | NucIM) SD=1;HREFTYPE=0; JCODE="nucim"; LTYPE="EJOURNAL" ;;
 	nimpa | nima | NIMPA | NIMA) SD=1;HREFTYPE=0; JCODE="nimpa"; LTYPE="EJOURNAL" ;;
