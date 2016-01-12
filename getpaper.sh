@@ -1,7 +1,7 @@
 #!/bin/bash
 # getpaper
-VERSION=1.0
-# Copyright 2010-2015  daid kahl
+VERSION=1.1
+# Copyright 2010-2016  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
 #
@@ -324,6 +324,7 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
 	#				1 : domain absent from href
 	#				2 : local file name given for href
 	AIP= # don't change this!  Initalizes a variable for AIP
+	APS= # don't change this!  Initalizes a variable for APS
 	SD= # don't change this!  Initalizes a variable for SD
 	PROPAGANDA=0 # don't change
 	NATURE=0 # don't change
@@ -371,13 +372,13 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
 	ppsa | PPSA  )   HREFTYPE=1; JCODE="ppsa"; LTYPE="EJOURNAL" ;;
 	ppsb | PPSB  )   HREFTYPE=1;JCODE="ppsb";LTYPE="EJOURNAL" ;;
 	pos | POS | PoS )  HREFTYPE=1; JCODE="pos"; LTYPE="ARTICLE" ;;
-	pra | phrva | PRA )   AIP=1;HREFTYPE=1;JCODE="phrva";LTYPE="EJOURNAL" ;;
-	prb | phrvb | PRB )   AIP=1;HREFTYPE=1;JCODE="phrvb";LTYPE="EJOURNAL" ;;
-	prc | phrvc | PRC )   AIP=1;HREFTYPE=1;JCODE="phrvc";LTYPE="EJOURNAL" ;;
-	prd | phrvd | PRD )   AIP=1;HREFTYPE=1;JCODE="phrvd";LTYPE="EJOURNAL" ;;
-	pre | phrve | PRE )   AIP=1;HREFTYPE=1;JCODE="phrve";LTYPE="EJOURNAL" ;;
+	pra | phrva | PRA )   APS=1;AIP=1;HREFTYPE=1;JCODE="phrva";LTYPE="EJOURNAL" ;;
+	prb | phrvb | PRB )   APS=1;AIP=1;HREFTYPE=1;JCODE="phrvb";LTYPE="EJOURNAL" ;;
+	prc | phrvc | PRC )   APS=1;AIP=1;HREFTYPE=1;JCODE="phrvc";LTYPE="EJOURNAL" ;;
+	prd | phrvd | PRD )   APS=1;AIP=1;HREFTYPE=1;JCODE="phrvd";LTYPE="EJOURNAL" ;;
+	pre | phrve | PRE )   APS=1;AIP=1;HREFTYPE=1;JCODE="phrve";LTYPE="EJOURNAL" ;;
 	phlb | physlb | PhLB )   SD=1;HREFTYPE=0;JCODE="phlb";LTYPE="EJOURNAL" ;;
-	prl | phrvl | PRL )   AIP=1;HREFTYPE=1;JCODE="phrvl";LTYPE="EJOURNAL" ;;
+	prl | phrvl | PRL )   APS=1;AIP=1;HREFTYPE=1;JCODE="phrvl";LTYPE="EJOURNAL" ;;
 	prpnp | PrPNP | ppnp | PPNP) SD=1;HREFTYPE=0; JCODE="prpnp"; LTYPE="EJOURNAL" ;;
 	pthph | PThPh | PTHPH )   HREFTYPE=1;JCODE="pthph";LTYPE="EJOURNAL" ;;
 	pthps | PThPS | PTHPS )   HREFTYPE=1;JCODE="pthps";LTYPE="EJOURNAL" ;;
@@ -567,6 +568,44 @@ function MakeLynxCmd () {
 	echo "key F" >> "$LYNXCMD"  
 	# send return command to lynx (will perform the search)
 	echo "key ^J" >> "$LYNXCMD" 
+        if [[ $APS -eq 1 ]];then
+	  echo "key ^J" >> "$LYNXCMD" 
+	  # view page source
+	  echo "key \\" >> "$LYNXCMD"
+	  # print the page source
+	  echo "key P" >> "$LYNXCMD"
+	  echo "key ^J" >> "$LYNXCMD" 
+	  echo "key ^U" >> "$LYNXCMD"
+	  # save the page source somewhere: FIX LOCATION!
+	  echo /tmp/.getpaper_aps_dump.html | sed 's/pdf/txt/' | awk 'BEGIN{FS=""}{for(i=1;i<=NF;i++)print "key "$i}' >> "$LYNXCMD"
+	  echo "key ^J" >> "$LYNXCMD" 
+	  # back to normal page
+	  echo "key \\" >> "$LYNXCMD"
+	  # run a command defined in /etc/lynx.cfg!
+	  echo "key ," >> "$LYNXCMD"
+	  # note, a shell can be spawned by ! key, but unclear how to exploit this
+	  # search for Einstein
+	  echo "key /" >> "$LYNXCMD"  
+	  echo "key E" >> "$LYNXCMD"  
+	  echo "key i" >> "$LYNXCMD"  
+	  echo "key n" >> "$LYNXCMD"  
+	  echo "key s" >> "$LYNXCMD"  
+	  echo "key t" >> "$LYNXCMD"  
+	  echo "key e" >> "$LYNXCMD"  
+	  echo "key i" >> "$LYNXCMD"  
+	  echo "key n" >> "$LYNXCMD"  
+	  # fill in a lot of commented arrow keys
+	  # the user selection in the hack script will tell us how many to uncomment
+	  echo "#key Down Arrow" >> "$LYNXCMD" 
+	  echo "#key Down Arrow" >> "$LYNXCMD" 
+	  echo "#key Down Arrow" >> "$LYNXCMD" 
+	  echo "#key Down Arrow" >> "$LYNXCMD" 
+	  echo "#key Down Arrow" >> "$LYNXCMD" 
+	  echo "#key Down Arrow" >> "$LYNXCMD" 
+	  echo "#key Down Arrow" >> "$LYNXCMD" 
+#	  echo "key Q" >> "$LYNXCMD"
+	  #echo "key ^Z" >> "$LYNXCMD"
+	fi	  
 	# tell lynx to download the link
 	echo "key d" >> "$LYNXCMD" 
 	# this enters lynx search mode
@@ -589,7 +628,7 @@ function MakeLynxCmd () {
 	# send quit command to lynx
 	echo "key q" >> "$LYNXCMD" 
 	# confirm quit
-	echo "key y" >> "$LYNXCMD" 
+	echo "key y" >> "$LYNXCMD"
 }
 
 # Download the paper
@@ -696,14 +735,14 @@ function DownloadPdf () {
 	if [ $GUI -eq 1 ];then
 		if [ "$Rflag" ];then # Remote flag is on
 			if [ $NATURE -eq 0 ];then
-				ssh "$USER@$HOST" wget -U 'Mozilla/5.0' --progress=bar:force "$FULLPATH" -O"$TMP/$FILENAME" 2>&1 | (zenity --title "getpaper" --text "Downloading..." --progress --auto-close --auto-kill)
+				ssh "$USER@$HOST" wget -U 'Mozilla/40.0' --progress=bar:force "$FULLPATH" -O"$TMP/$FILENAME" 2>&1 | (zenity --title "getpaper" --text "Downloading..." --progress --auto-close --auto-kill)
 			elif [ $NATURE -eq 1 ];then
 				#  500 Internal Server Error avoided
 				ssh "$USER@$HOST" wget --header='Accept-Language: en-us,en' --progress=bar:force "$FULLPATH" -O"$TMP/$FILENAME" 2>&1 | (zenity --title "getpaper" --text "Downloading..." --progress --auto-close --auto-kill)
 			fi
 		else # Remote flag is off
 			if [ $NATURE -eq 0 ];then
-				wget -U 'Mozilla/5.0' --progress=bar:force "$FULLPATH" -O"$TMP/$FILENAME" 2>&1 | (zenity --title "getpaper" --text "Downloading..." --progress --auto-close --auto-kill)
+				wget -U 'Mozilla/40.0' --progress=bar:force "$FULLPATH" -O"$TMP/$FILENAME" 2>&1 | (zenity --title "getpaper" --text "Downloading..." --progress --auto-close --auto-kill)
 			elif [ $NATURE -eq 1 ];then
 				#  500 Internal Server Error avoided
 				wget --header='Accept-Language: en-us,en' --progress=bar:force "$FULLPATH" -O"$TMP/$FILENAME" 2>&1 | (zenity --title "getpaper" --text "Downloading..." --progress --auto-close --auto-kill)
@@ -727,7 +766,7 @@ function DownloadPdf () {
 				ssh "$USER@$HOST" lynx -accept_all_cookies -cmd_script="$LYNXCMD" "$ADSLINK"
 			else
 				if [ $NATURE -eq 0 ];then
-					ssh "$USER@$HOST" wget -U 'Mozilla/5.0' -O "$TMP/$FILENAME" "$FULLPATH" # works
+					ssh "$USER@$HOST" wget -U 'Mozilla/40.0' -O "$TMP/$FILENAME" "$FULLPATH" # works
 				elif [ $NATURE -eq 1 ];then
 					#  500 Internal Server Error avoided
 					ssh "$USER@$HOST" wget --header='Accept-Language: en-us,en' -O "$TMP/$FILENAME" "$FULLPATH" # works
@@ -748,7 +787,7 @@ function DownloadPdf () {
 			else
 				#FULLPATH=`echo $FULLPATH | sed 's/\&/\\\&/g'` # testing to avoid wget "Scheme missing" error #cause 500 error for ApJ, etc
 				if [ $NATURE -eq 0 ];then
-					wget -U 'Mozilla/5.0' -O"$TMP/$FILENAME" "$FULLPATH"
+					wget -U 'Mozilla/40.0' -O"$TMP/$FILENAME" "$FULLPATH"
 				elif [ $NATURE -eq 1 ];then
 					#  500 Internal Server Error avoided
 					wget --header='Accept-Language: en-us,en' -O"$TMP/$FILENAME" "$FULLPATH"
