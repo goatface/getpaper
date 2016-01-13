@@ -1,6 +1,6 @@
 #!/bin/bash
 # getpaper
-VERSION=1.1
+VERSION=1.2
 # Copyright 2010-2016  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -20,6 +20,9 @@ VERSION=1.1
 
 # Initialize variables
 # Read in or create .getpaperrc
+
+# To do:  'file' version only does the first line...not used this in years
+	  
 function InitVariables () {
 	CONFIG_FILE=$HOME/.getpaperrc
 	# Check for configuration file
@@ -53,7 +56,9 @@ TMP=/tmp
 TMPBIBCODE=\$TMP/.getpaper_bibcode
 TMPBIBTEX=\$TMP/.getpaper_bibtex
 TMPBIBCODELIST=\$TMP/.getpaper_bibcodelist
+TMPFILENAME=\$TMP/.getpaper_filename
 TMPURL=\$TMP/.getpaper_url
+TMPAPSDUMP=\$TMP/getpaper_aps_dump.html
 ERRORFILE=\$TMP/.getpaper_error
 LYNXCMD=\$TMP/.getpaper_lynxcmd
 # temporary storage for input information...whereever you want
@@ -414,6 +419,9 @@ function TmpCleanUp () {
 	if [ -e $TMPURL ];then
 		rm "$TMPURL"
 	fi
+	if [ -e $TMPFILENAME ];then
+		rm "$TMPFILENAME"
+	fi
 	if [ -e $ERRORFILE ];then
 		rm "$ERRORFILE"
 	fi
@@ -557,6 +565,7 @@ function FetchBibtex() {
 function MakeLynxCmd () {
 	# this is a workaround for any hosts that attempt to deny wget
 	# basically, instead of using wget, we are going to make a download script for lynx
+	# the method is versatile for hacking and is quickly being implemented for more and more journals
 	if [ -e $LYNXCMD ];then
 		rm "$LYNXCMD"
 	fi
@@ -568,44 +577,55 @@ function MakeLynxCmd () {
 	echo "key F" >> "$LYNXCMD"  
 	# send return command to lynx (will perform the search)
 	echo "key ^J" >> "$LYNXCMD" 
-        if [[ $APS -eq 1 ]];then
+        # hack for APS because clicking Einstein is bullshit
+	# 12 Jan 2016 20:41:56 
+	if [[ $APS -eq 1 ]];then
 	  echo "key ^J" >> "$LYNXCMD" 
-	  # view page source
-	  echo "key \\" >> "$LYNXCMD"
-	  # print the page source
-	  echo "key P" >> "$LYNXCMD"
-	  echo "key ^J" >> "$LYNXCMD" 
-	  echo "key ^U" >> "$LYNXCMD"
-	  # save the page source somewhere: FIX LOCATION!
-	  echo /tmp/.getpaper_aps_dump.html | sed 's/pdf/txt/' | awk 'BEGIN{FS=""}{for(i=1;i<=NF;i++)print "key "$i}' >> "$LYNXCMD"
-	  echo "key ^J" >> "$LYNXCMD" 
-	  # back to normal page
-	  echo "key \\" >> "$LYNXCMD"
-	  # run a command defined in /etc/lynx.cfg!
+
+# unfortunately, this causes reloading (which is strange) and thus does not work!
+# view page source
+###	  echo "key \\" >> "$LYNXCMD"
+###	  # print the page source
+###	  echo "key P" >> "$LYNXCMD"
+###	  echo "key ^J" >> "$LYNXCMD" 
+###	  echo "key ^U" >> "$LYNXCMD"
+###	  # save the page source somewhere: FIX LOCATION!
+###	  #echo "$TMP/$FILENAME" | sed 's/pdf/txt/' | awk 'BEGIN{FS=""}{for(i=1;i<=NF;i++)print "key "$i}' >> "$LYNXCMD"
+###	  echo "$TMPAPSDUMP" | awk 'BEGIN{FS=""}{for(i=1;i<=NF;i++)print "key "$i}' >> "$LYNXCMD"
+###	  echo "key ^J" >> "$LYNXCMD" 
+###	  # back to normal page
+###	  echo "key \\" >> "$LYNXCMD"
+
+
+          # run a command defined in /etc/lynx.cfg!
 	  echo "key ," >> "$LYNXCMD"
 	  # note, a shell can be spawned by ! key, but unclear how to exploit this
-	  # search for Einstein
-	  echo "key /" >> "$LYNXCMD"  
-	  echo "key E" >> "$LYNXCMD"  
-	  echo "key i" >> "$LYNXCMD"  
-	  echo "key n" >> "$LYNXCMD"  
-	  echo "key s" >> "$LYNXCMD"  
-	  echo "key t" >> "$LYNXCMD"  
-	  echo "key e" >> "$LYNXCMD"  
-	  echo "key i" >> "$LYNXCMD"  
-	  echo "key n" >> "$LYNXCMD"  
-	  # fill in a lot of commented arrow keys
-	  # the user selection in the hack script will tell us how many to uncomment
-	  echo "#key Down Arrow" >> "$LYNXCMD" 
-	  echo "#key Down Arrow" >> "$LYNXCMD" 
-	  echo "#key Down Arrow" >> "$LYNXCMD" 
-	  echo "#key Down Arrow" >> "$LYNXCMD" 
-	  echo "#key Down Arrow" >> "$LYNXCMD" 
-	  echo "#key Down Arrow" >> "$LYNXCMD" 
-	  echo "#key Down Arrow" >> "$LYNXCMD" 
+# somehow altering the cmd_script for lynx doesn't work, but appending to it does
+# so we must do this in the external aps hacking script
+# search for Einstein
+##	  echo "key /" >> "$LYNXCMD"  
+##	  echo "key E" >> "$LYNXCMD"  
+##	  echo "key i" >> "$LYNXCMD"  
+##	  echo "key n" >> "$LYNXCMD"  
+##	  echo "key s" >> "$LYNXCMD"  
+##	  echo "key t" >> "$LYNXCMD"  
+##	  echo "key e" >> "$LYNXCMD"  
+##	  echo "key i" >> "$LYNXCMD"  
+##	  echo "key n" >> "$LYNXCMD"  
+##	  # send return command to lynx (will perform the search)
+##	  echo "key ^J" >> "$LYNXCMD" 
+##	  # fill in a lot of commented arrow keys
+##	  # the user selection in the hack script will tell us how many to uncomment
+##	  echo "#key Down Arrow" >> "$LYNXCMD" 
+##	  echo "#key Down Arrow" >> "$LYNXCMD" 
+##	  echo "#key Down Arrow" >> "$LYNXCMD" 
+##	  echo "#key Down Arrow" >> "$LYNXCMD" 
+##	  echo "#key Down Arrow" >> "$LYNXCMD" 
+##	  echo "#key Down Arrow" >> "$LYNXCMD" 
+##	  echo "#key Down Arrow" >> "$LYNXCMD" 
 #	  echo "key Q" >> "$LYNXCMD"
 	  #echo "key ^Z" >> "$LYNXCMD"
-	fi	  
+	else
 	# tell lynx to download the link
 	echo "key d" >> "$LYNXCMD" 
 	# this enters lynx search mode
@@ -629,6 +649,8 @@ function MakeLynxCmd () {
 	echo "key q" >> "$LYNXCMD" 
 	# confirm quit
 	echo "key y" >> "$LYNXCMD"
+	
+	fi	  
 }
 
 # Download the paper
@@ -818,7 +840,7 @@ function AddBibtex () {
 }
 
 # Check the directory structure where we will keep the paper 
-# If it does not exist, recurrently make the directories
+# If it does not exist, recursively make the directories
 function CheckDir () { 
 	if [ ! -d "$LIBPATH/$PAPERTYPE" ];then
 		mkdir "$LIBPATH/$PAPERTYPE"
@@ -865,7 +887,7 @@ function ErrorReport() {
 
 # It could be easy to mistakenly download junk
 # URL domain error, forbidden access of content, etc
-# Best to confirm the download item is a PDF file
+# Best to confirm the downloaded item is a PDF file
 function IsPdfValid () { 
 	printf "Checking if PDF appears to be valid...\n"
 	if ( pdfinfo $TMP/$FILENAME 2>&1 | grep "Error: May not be a PDF file\|Syntax Warning: May not be a PDF file (continuing anyway)\|No such file or directory" > /dev/null );then
@@ -1027,6 +1049,7 @@ do
 	# TO DO: Should get these dynamically from existing bibtex, in the case of --query...
 	FILEPATH="$LIBPATH/$PAPERTYPE/$YEAR"
 	FILENAME="$JOURNAL.$VOLUME.$PAGE.pdf"
+	echo "$FILENAME" > $TMPFILENAME
 	if [[ -z $qflag  && -z $bflag ]];then # Only do these things without the c(heck) flag and b(ibtex) flag
 		DownloadPdf
 		if [ "$Rval" ];then
