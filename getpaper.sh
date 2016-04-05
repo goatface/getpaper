@@ -1,6 +1,6 @@
 #!/bin/bash
 # getpaper
-VERSION=1.2
+VERSION=1.21
 # Copyright 2010-2016  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -22,7 +22,9 @@ VERSION=1.2
 # Read in or create .getpaperrc
 
 # To do:  'file' version only does the first line...not used this in years
-	  
+#	Oflag should open even if it's already downloaded (need to create $FILENAME outside DownloadPdf etc)	 
+#	LYNX flag is probably appropriate for most journals...many old methods don't work any longer
+# 	GUI mode is mostly broken since it is not mirroring the methods really
 function InitVariables () {
 	CONFIG_FILE=$HOME/.getpaperrc
 	# Check for configuration file
@@ -328,14 +330,14 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
 	#				0 : full paths given for href
 	#				1 : domain absent from href
 	#				2 : local file name given for href
-	AIP= # don't change this!  Initalizes a variable for AIP
+	LYNX= # don't change this!  Initalizes a variable for LYNX
 	APS= # don't change this!  Initalizes a variable for APS
-	SD= # don't change this!  Initalizes a variable for SD
+	SD= # don't change this!  Initalizes a variable for SD; 13 Jan 2016 15:15:48 presently does nothing as SD has regressed to standard methods
 	PROPAGANDA=0 # don't change
 	NATURE=0 # don't change
 	case "$JOURNAL" in
 	aa  | AA ) HREFTYPE=1; JCODE="a%26a"; LTYPE="ARTICLE" ;;
-	aipc | AIPC )  AIP=1; HREFTYPE=1; JCODE="aipc"; LTYPE="EJOURNAL" ; PROPAGANDA=1 ;;
+	aipc | LYNXC )  LYNX=1; HREFTYPE=1; JCODE="aipc"; LTYPE="EJOURNAL" ; PROPAGANDA=1 ;;
 	aj |AJ )  HREFTYPE=1; JCODE="aj"; LTYPE="ARTICLE" ;;
 	astl | AstL )  HREFTYPE=1; JCODE="astl"; LTYPE="EJOURNAL" ;;
 	anap |AnAp )  HREFTYPE=1; JCODE="anap"; LTYPE="ARTICLE" ;;
@@ -346,53 +348,53 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
 	aujph | AuJPh )  HREFTYPE=1; JCODE="aujph"; LTYPE="ARTICLE" ;;
 	baas | BAAS  )   HREFTYPE=1; JCODE="baas"; LTYPE="ARTICLE" ;;
 	bsrsl | BSRSL  )   HREFTYPE=2; JCODE="bsrsl"; LTYPE="EJOURNAL" ;;
-	epja | EPJA )  HREFTYPE=1; JCODE="epja"; LTYPE="EJOURNAL" ;;
-	epjb | EPJB )  HREFTYPE=1; JCODE="epjb"; LTYPE="EJOURNAL" ;;
-	epjc | EPJC )  HREFTYPE=1; JCODE="epjc"; LTYPE="EJOURNAL" ;;
-	epjd | EPJD )  HREFTYPE=1; JCODE="epjd"; LTYPE="EJOURNAL" ;;
-	epje | EPJE )  HREFTYPE=1; JCODE="epje"; LTYPE="EJOURNAL" ;;
-	epjst | EPJST )  HREFTYPE=1; JCODE="epjst"; LTYPE="EJOURNAL" ;;
-	epjh | EPJH )  HREFTYPE=1; JCODE="epjh"; LTYPE="EJOURNAL" ;;
+	epja | EPJA )  LYNX=1;HREFTYPE=1; JCODE="epja"; LTYPE="EJOURNAL" ;;
+	epjb | EPJB )  LYNX=1;HREFTYPE=1; JCODE="epjb"; LTYPE="EJOURNAL" ;;
+	epjc | EPJC )  LYNX=1;HREFTYPE=1; JCODE="epjc"; LTYPE="EJOURNAL" ;;
+	epjd | EPJD )  LYNX=1;HREFTYPE=1; JCODE="epjd"; LTYPE="EJOURNAL" ;;
+	epje | EPJE )  LYNX=1;HREFTYPE=1; JCODE="epje"; LTYPE="EJOURNAL" ;;
+	epjst | EPJST )  LYNX=1;HREFTYPE=1; JCODE="epjst"; LTYPE="EJOURNAL" ;;
+	epjh | EPJH )  LYNX=1;HREFTYPE=1; JCODE="epjh"; LTYPE="EJOURNAL" ;;
 	gecoa | GeCoA | GECOA )   SD=1;HREFTYPE=0;JCODE="gecoa";LTYPE="EJOURNAL" ;;
-	jphg | JPhG | jphyg | JPhyG )  HREFTYPE=1; JCODE="jphg"; LTYPE="EJOURNAL" ;PROPAGANDA=1;;
+	jphg | JPhG | jphyg | JPhyG )  LYNX=1;HREFTYPE=1; JCODE="jphg"; LTYPE="EJOURNAL" ;PROPAGANDA=1;;
 	jpsj | JPSJ  )  HREFTYPE=1; JCODE="jpsj"; LTYPE="EJOURNAL" ;;
 	mnras | MNRAS ) HREFTYPE=1; JCODE="mnras"; LTYPE="ARTICLE" ;;
 	msrsl | MSRSL  )   HREFTYPE=1; JCODE="msrsl"; LTYPE="ARTICLE" ;;
 	metro | Metro )  HREFTYPE=1; JCODE="metro"; LTYPE="EJOURNAL" ;;
 	natur | nature | Nature | Natur ) NATURE=1; HREFTYPE=1; JCODE="natur"; LTYPE="EJOURNAL" ;;
-	natph | NatPh )  AIP=1; HREFTYPE=1; JCODE="natph"; LTYPE="EJOURNAL" ;;
+	natph | NatPh )  LYNX=1; HREFTYPE=1; JCODE="natph"; LTYPE="EJOURNAL" ;;
 	newar | NewAR | NEWAR )   SD=1;HREFTYPE=0;JCODE="newar";LTYPE="EJOURNAL" ;;
 	nim | nucim | NIM | NucIM) SD=1;HREFTYPE=0; JCODE="nucim"; LTYPE="EJOURNAL" ;;
 	nimpa | nima | NIMPA | NIMA) SD=1;HREFTYPE=0; JCODE="nimpa"; LTYPE="EJOURNAL" ;;
 	nimpb | nimb | NIMPB | NIMB) SD=1;HREFTYPE=0; JCODE="nimpb"; LTYPE="EJOURNAL" ;;
-	nupha | npa | NPA | nucphysa ) SD=1;HREFTYPE=0; JCODE="nupha"; LTYPE="EJOURNAL" ;;
-	nuphb | npb | NPB | nucphysb ) SD=1;HREFTYPE=0; JCODE="nuphb"; LTYPE="EJOURNAL" ;;
+	nupha | npa | NPA | nucphysa ) LYNX=1;HREFTYPE=0; JCODE="nupha"; LTYPE="EJOURNAL" ;;
+	nuphb | npb | NPB | nucphysb ) LYNX=1;HREFTYPE=0; JCODE="nuphb"; LTYPE="EJOURNAL" ;;
 	obs | OBS )  HREFTYPE=1; JCODE="obs"; LTYPE="ARTICLE" ;;
 	paphs | PAPhS | PAPHS )   HREFTYPE=1; JCODE="paphs"; LTYPE="EJOURNAL" ;;
 	pasj | PASJ )   HREFTYPE=1; JCODE="pasj"; LTYPE="ARTICLE" ;;
 	pasp | PASP )   HREFTYPE=1; JCODE="pasp"; LTYPE="ARTICLE" ;;
 	pce | PCE ) SD=1;HREFTYPE=0; JCODE="pce"; LTYPE="EJOURNAL" ;;
-	phrv | pr | PhRv | PHRV )   AIP=1; HREFTYPE=1; JCODE="phrv"; LTYPE="EJOURNAL" ;;
+	phrv | pr | PhRv | PHRV )   APS=1;LYNX=1; HREFTYPE=1; JCODE="phrv"; LTYPE="EJOURNAL" ;;
 	pmag | PMag | PMAG )   HREFTYPE=1; JCODE="pmag"; LTYPE="EJOURNAL" ;;
 	ppsa | PPSA  )   HREFTYPE=1; JCODE="ppsa"; LTYPE="EJOURNAL" ;;
 	ppsb | PPSB  )   HREFTYPE=1;JCODE="ppsb";LTYPE="EJOURNAL" ;;
 	pos | POS | PoS )  HREFTYPE=1; JCODE="pos"; LTYPE="ARTICLE" ;;
-	pra | phrva | PRA )   APS=1;AIP=1;HREFTYPE=1;JCODE="phrva";LTYPE="EJOURNAL" ;;
-	prb | phrvb | PRB )   APS=1;AIP=1;HREFTYPE=1;JCODE="phrvb";LTYPE="EJOURNAL" ;;
-	prc | phrvc | PRC )   APS=1;AIP=1;HREFTYPE=1;JCODE="phrvc";LTYPE="EJOURNAL" ;;
-	prd | phrvd | PRD )   APS=1;AIP=1;HREFTYPE=1;JCODE="phrvd";LTYPE="EJOURNAL" ;;
-	pre | phrve | PRE )   APS=1;AIP=1;HREFTYPE=1;JCODE="phrve";LTYPE="EJOURNAL" ;;
+	pra | phrva | PRA )   APS=1;LYNX=1;HREFTYPE=1;JCODE="phrva";LTYPE="EJOURNAL" ;;
+	prb | phrvb | PRB )   APS=1;LYNX=1;HREFTYPE=1;JCODE="phrvb";LTYPE="EJOURNAL" ;;
+	prc | phrvc | PRC )   APS=1;LYNX=1;HREFTYPE=1;JCODE="phrvc";LTYPE="EJOURNAL" ;;
+	prd | phrvd | PRD )   APS=1;LYNX=1;HREFTYPE=1;JCODE="phrvd";LTYPE="EJOURNAL" ;;
+	pre | phrve | PRE )   APS=1;LYNX=1;HREFTYPE=1;JCODE="phrve";LTYPE="EJOURNAL" ;;
 	phlb | physlb | PhLB )   SD=1;HREFTYPE=0;JCODE="phlb";LTYPE="EJOURNAL" ;;
-	prl | phrvl | PRL )   APS=1;AIP=1;HREFTYPE=1;JCODE="phrvl";LTYPE="EJOURNAL" ;;
+	prl | phrvl | PRL )   APS=1;LYNX=1;HREFTYPE=1;JCODE="phrvl";LTYPE="EJOURNAL" ;;
 	prpnp | PrPNP | ppnp | PPNP) SD=1;HREFTYPE=0; JCODE="prpnp"; LTYPE="EJOURNAL" ;;
 	pthph | PThPh | PTHPH )   HREFTYPE=1;JCODE="pthph";LTYPE="EJOURNAL" ;;
 	pthps | PThPS | PTHPS )   HREFTYPE=1;JCODE="pthps";LTYPE="EJOURNAL" ;;
 	rsci | RScI )  HREFTYPE=0; JCODE="rsci"; LTYPE="EJOURNAL" ;;
-	rvmp | RvMP | RVMP ) AIP=1;HREFTYPE=1;JCODE="rvmp";LTYPE="EJOURNAL" ;;
+	rvmp | RvMP | RVMP ) LYNX=1;HREFTYPE=1;JCODE="rvmp";LTYPE="EJOURNAL" ;;
 	science | SCIENCE ) HREFTYPE=1;JCODE="science";LTYPE="ARTICLE" ;;
 	scoa | SCoA| SCOA )  HREFTYPE=1;JCODE="scoa";LTYPE="ARTICLE" ;;
 	va | VA | ViA | via) SD=1;HREFTYPE=0; JCODE="va"; LTYPE="EJOURNAL" ;;
-	zphy | ZPhy| ZPHY )  AIP=1;HREFTYPE=1;JCODE="zphy";LTYPE="EJOURNAL" ;;
+	zphy | ZPhy| ZPHY )  LYNX=1;HREFTYPE=1;JCODE="zphy";LTYPE="EJOURNAL" ;;
 	* ) 
 	        printf "ERROR: Journal code $JOURNAL not in database, skipping...\n"
 		Error
@@ -576,6 +578,8 @@ function MakeLynxCmd () {
 	echo "key D" >> "$LYNXCMD"  
 	echo "key F" >> "$LYNXCMD"  
 	# send return command to lynx (will perform the search)
+#	echo "key !" >> "$LYNXCMD"
+#	echo "key ," >> "$LYNXCMD"
 	echo "key ^J" >> "$LYNXCMD" 
         # hack for APS because clicking Einstein is bullshit
 	# 12 Jan 2016 20:41:56 
@@ -699,18 +703,20 @@ function DownloadPdf () {
 		#	They use JavaScript to generate a redirect, since command-line browsers cannot do JS
 		#	Once we get the source from ADS, we can nab the redirect URL from a lynx source dump
 		#       Then, magically, a slight hack on the original way works again
-		if [ "$SD" ];then
-			lynx -source -connect_timeout=20 "$ADSLINK" > $TMPURL
-			TMPURL2=$(grep 'name="redirectURL"' $TMPURL | sed 's/.*value="//' | sed 's/".*//')
-			lynx -source "$TMPURL2" > $TMPURL
-			echo "Science (in)Direct hack"
-		#elif [[ "$Rflag" && "$AIP" ]]; then # If it IS Remote AND AIP
-			# I think we don't need this anymore 04 Dec 2014 17:10:26 
-			# the remote shell will be confused by & in a URL, so we need to make it a literal
-			#ADSLINK=`echo $ADSLINK | sed 's/\&/\\\&/g'`
-			#ssh "$USER@$HOST" elinks -source "$ADSLINK" > $TMPURL
-			#echo "Debugging..."
-		fi
+		#13 Jan 2016 14:36:40  this line was under SD for a long time...no idea why!
+		lynx -source -connect_timeout=20 "$ADSLINK" > $TMPURL
+		# holy fuck I hate SD sOooOooOooooooooOOOOOOO much 13 Jan 2016 15:13:17 
+		##if [ "$SD" ];then
+		##	TMPURL2=$(grep 'name="redirectURL"' $TMPURL | sed 's/.*value="//' | sed 's/".*//')
+		##	lynx -source "$TMPURL2" > $TMPURL
+		##	echo "Science (in)Direct hack"
+		###elif [[ "$Rflag" && "$LYNX" ]]; then # If it IS Remote AND LYNX
+		##	# I think we don't need this anymore 04 Dec 2014 17:10:26 
+		##	# the remote shell will be confused by & in a URL, so we need to make it a literal
+		##	#ADSLINK=`echo $ADSLINK | sed 's/\&/\\\&/g'`
+		##	#ssh "$USER@$HOST" elinks -source "$ADSLINK" > $TMPURL
+		##	#echo "Debugging..."
+		##fi
 		if [ $HREFTYPE -eq 0 ];then
 			#full paths given for href
 			# at present just for ScienceDirect (from the grep sdarticle.pdf (was origin=search))
@@ -728,15 +734,16 @@ function DownloadPdf () {
 				#sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
 				#sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//'`
 				#sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | grep sdarticle.pdf` # don't seem to need this now
-			if [ "$LOCALPDF" == "" ];then # previous command did not grab a URL, try another way (this for AIP)
+			if [ "$LOCALPDF" == "" ];then # previous command did not grab a URL, try another way (this was for AIP but now SD)
 				#echo "$LOCALPDF is empty"
 				LOCALPDF=`grep "Download PDF" $TMPURL |  \
 				sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
-				sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | head -n 1`
+				sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | sed 's/%0D//' | head -n 1`
 			fi
 		fi
-		if [[ $HREFTYPE -eq 1 && $AIP -eq 0 ]];then # we should really make a flag for if wget is used...we don't need this if we use lynx
+		if [[ $HREFTYPE -eq 1 && $LYNX -eq 0 ]];then # we should really make a flag for if wget is used...we don't need this if we use lynx
 			#domain omitted for href
+			#echo "Debug..."
 			BASEURL=`head -n 1 $TMPURL | sed 's/.*X-URL:\ //'|  sed 's,\(http://[^/]*\)/.*,\1,'`
 			LOCALPDF=`grep PDF $TMPURL | \
 				sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
@@ -777,9 +784,9 @@ function DownloadPdf () {
 			# the remote shell will be confused by & in a URL, so we need to make it a literal
 			FULLPATH=`echo $FULLPATH | sed 's/\&/\\\&/g'`
 			#echo "ssh "$USER@$HOST" wget -U 'Mozilla/5.0' -O $TMP/$FILENAME $FULLPATH" # works
-			# first test of AIP workaround -- seems to work!
-			#if [[ "$AIP" || "$SD" ]]; then # SD reverts to the old style now?! 28 Jun 2014 07:50:40 
-			if [[ "$AIP" ]]; then
+			# first test of LYNX workaround -- seems to work!
+			#if [[ "$LYNX" || "$SD" ]]; then # SD reverts to the old style now?! 28 Jun 2014 07:50:40 
+			if [[ "$LYNX" ]]; then
 				MakeLynxCmd
 				echo "Copying lynx command to the ssh host..."
 				scp "$LYNXCMD" "$USER@$HOST:$LYNXCMD"
@@ -802,8 +809,8 @@ function DownloadPdf () {
 			#"$WGET -U 'Mozilla/5.0' $FULLPATH -O$TMP/$FILENAME"
 		else # Remote flag is off
 			# first test of AIP workaround -- seems to work!
-			#if [[ "$AIP" || "$SD" ]]; then
-			if [[ "$AIP" ]]; then # SD reverts to the old style now?! 28 Jun 2014 07:51:03 
+			#if [[ "$LYNX" || "$SD" ]]; then
+			if [[ "$LYNX" ]]; then # SD reverts to the old style now?! 28 Jun 2014 07:51:03 
 				MakeLynxCmd
 				lynx -accept_all_cookies -cmd_script="$LYNXCMD" "$ADSLINK"
 			else
