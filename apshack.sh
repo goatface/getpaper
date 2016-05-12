@@ -13,34 +13,39 @@ fi
 source $CONFIG_FILE
 
 function TmpCleanUp () {
+	for i in $( ls "$TMP"/getpaper*.jpg ); do
+        	if [ -e $i ];then
+		  rm -f $i
+		fi
+	done
 	# todo: make removing the images a loop for fuck's sake
-        if [ -e $TMP/getpaper1.jpg ];then
-                rm "$TMP"/getpaper1.jpg
-        fi
-        if [ -e $TMP/getpaper2.jpg ];then
-                rm "$TMP"/getpaper2.jpg
-        fi
-        if [ -e $TMP/getpaper3.jpg ];then
-                rm "$TMP"/getpaper3.jpg
-        fi
-        if [ -e $TMP/getpaper4.jpg ];then
-                rm "$TMP"/getpaper4.jpg
-        fi
-        if [ -e $TMP/getpaper5.jpg ];then
-                rm "$TMP"/getpaper5.jpg
-        fi
-        if [ -e $TMP/getpaper6.jpg ];then
-                rm "$TMP"/getpaper6.jpg
-        fi
-        if [ -e $TMP/getpaper7.jpg ];then
-                rm "$TMP"/getpaper7.jpg
-        fi
-        if [ -e $TMP/getpaper7.jpg ];then
-                rm "$TMP"/getpaper7.jpg
-        fi
-        if [ -e $TMP/getpaper8.jpg ];then
-                rm "$TMP"/getpaper8.jpg
-        fi
+#        if [ -e $TMP/getpaper1.jpg ];then
+#                rm "$TMP"/getpaper1.jpg
+#        fi
+#        if [ -e $TMP/getpaper2.jpg ];then
+#                rm "$TMP"/getpaper2.jpg
+#        fi
+#        if [ -e $TMP/getpaper3.jpg ];then
+#                rm "$TMP"/getpaper3.jpg
+#        fi
+#        if [ -e $TMP/getpaper4.jpg ];then
+#                rm "$TMP"/getpaper4.jpg
+#        fi
+#        if [ -e $TMP/getpaper5.jpg ];then
+#                rm "$TMP"/getpaper5.jpg
+#        fi
+#        if [ -e $TMP/getpaper6.jpg ];then
+#                rm "$TMP"/getpaper6.jpg
+#        fi
+#        if [ -e $TMP/getpaper7.jpg ];then
+#                rm "$TMP"/getpaper7.jpg
+#        fi
+#        if [ -e $TMP/getpaper7.jpg ];then
+#                rm "$TMP"/getpaper7.jpg
+#        fi
+#        if [ -e $TMP/getpaper8.jpg ];then
+#                rm "$TMP"/getpaper8.jpg
+#        fi
         if [ -e "$APSIMGCHOOSE" ];then
                 rm "$APSIMGCHOOSE"
         fi
@@ -79,9 +84,6 @@ EINSTEIN=$(zenity --entry --title="getpaper APS hack" --text="Which number was E
           echo "key n" >> "$LYNXCMD"
           # send return command to lynx (will perform the search)
           echo "key ^J" >> "$LYNXCMD"
-
-# todo: make if for user daid
-cp $TMP/getpaper"$EINSTEIN".jpg $HOME/getpaper/"$RANDOM"einstein.jpg
 
 let EINSTEIN=EINSTEIN-1 
 if [[ $EINSTEIN -ne 0 ]];then
