@@ -280,6 +280,7 @@ function JournalList() {
 	printf "epjst\tEuropean Physical Journal ST\n"
 	printf "epjh\tEuropean Physical Journal H\n"
 	printf "gecoa\tGeochimica et Cosmochimica Acta\n"
+	printf "jphcs\tConference Series\n"
 	printf "jphg\tJournal of Physics G: Nuclear and Particle Physics\n"
 	printf "jpsj\tJournal of the Physical Society of Japan\n"
 	printf "mnras\tMonthly Notices of the Royal Astronomical Society\n"
@@ -356,6 +357,7 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
 	epjst | EPJST )  LYNX=1;HREFTYPE=1; JCODE="epjst"; LTYPE="EJOURNAL" ;;
 	epjh | EPJH )  LYNX=1;HREFTYPE=1; JCODE="epjh"; LTYPE="EJOURNAL" ;;
 	gecoa | GeCoA | GECOA )   SD=1;HREFTYPE=0;JCODE="gecoa";LTYPE="EJOURNAL" ;;
+	jphcs | JPhCS | jphycs | JPhyCS )  LYNX=1;HREFTYPE=1; JCODE="jphcs"; LTYPE="EJOURNAL" ;PROPAGANDA=1;;
 	jphg | JPhG | jphyg | JPhyG )  LYNX=1;HREFTYPE=1; JCODE="jphg"; LTYPE="EJOURNAL" ;PROPAGANDA=1;;
 	jpsj | JPSJ  )  HREFTYPE=1; JCODE="jpsj"; LTYPE="EJOURNAL" ;;
 	mnras | MNRAS ) HREFTYPE=1; JCODE="mnras"; LTYPE="ARTICLE" ;;
@@ -932,6 +934,7 @@ jval=$(zenity  --width=400  --height=703 --title "getpaper" --list  --text "Choo
 	FALSE epjst "European Physical Journal ST" \
 	FALSE epjh "European Physical Journal H" \
 	FALSE gecoa "Geochimica et Cosmochimica Acta" \
+	FALSE jphcs "Journal of Physics Conference Series" \
 	FALSE jphg "Journal of Physics G: Nuclear and Particle Physics" \
 	FALSE jpsj "Journal of the Physical Society of Japan" \
 	FALSE mnras "Monthly Notices of the Royal Astronomical Society" \
