@@ -273,12 +273,14 @@ function JournalList() {
 	printf "baas\tBulletin of the American Astronomical Society\n"
 	printf "bsrsl\tBulletin de la Societe Royale des Sciences de Liege\n"
 	printf "epja\tEuropean Physical Journal A\n"
+	printf "epjas\tEuropean Physical Journal A Supplement\n"
 	printf "epjb\tEuropean Physical Journal B\n"
 	printf "epjc\tEuropean Physical Journal C\n"
 	printf "epjd\tEuropean Physical Journal D\n"
 	printf "epje\tEuropean Physical Journal E\n"
 	printf "epjst\tEuropean Physical Journal ST\n"
 	printf "epjh\tEuropean Physical Journal H\n"
+	printf "epjwc\tEuropean Physical Journal Web of Conferences\n"
 	printf "gecoa\tGeochimica et Cosmochimica Acta\n"
 	printf "jphcs\tConference Series\n"
 	printf "jphg\tJournal of Physics G: Nuclear and Particle Physics\n"
@@ -294,6 +296,7 @@ function JournalList() {
 	printf "nimpb\tNuclear Instruments and Methods in Physics Research B\n"
 	printf "nupha\tNuclear Physics A\n"
 	printf "nuphb\tNuclear Physics B\n"
+	printf "nuphs\tNuclear Physics Supplement\n"
 	printf "obs\tThe Observatory\n"
 	printf "paphs\tProceedings of the American Philosophical Society\n" # none online via ADS
 	printf "pce\tPhysics and Chemsitry of the Earth\n"
@@ -320,6 +323,7 @@ function JournalList() {
 	printf "scoa\tSmithsonian Contributions to Astrophysics\n"
 	printf "va\tVistas in Astronomy\n"
 	printf "zphy\tZeitschrift fur Physik\n"
+	printf "zphya\tZeitschrift fur Physik A\n"
 }
 
 # Set the proper variables so getpaper can determine what to do
@@ -350,12 +354,14 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
 	baas | BAAS  )   HREFTYPE=1; JCODE="baas"; LTYPE="ARTICLE" ;;
 	bsrsl | BSRSL  )   HREFTYPE=2; JCODE="bsrsl"; LTYPE="EJOURNAL" ;;
 	epja | EPJA )  LYNX=1;HREFTYPE=1; JCODE="epja"; LTYPE="EJOURNAL" ;;
+	epjas | EPJAS )  LYNX=1;HREFTYPE=1; JCODE="epjas"; LTYPE="EJOURNAL" ;;
 	epjb | EPJB )  LYNX=1;HREFTYPE=1; JCODE="epjb"; LTYPE="EJOURNAL" ;;
 	epjc | EPJC )  LYNX=1;HREFTYPE=1; JCODE="epjc"; LTYPE="EJOURNAL" ;;
 	epjd | EPJD )  LYNX=1;HREFTYPE=1; JCODE="epjd"; LTYPE="EJOURNAL" ;;
 	epje | EPJE )  LYNX=1;HREFTYPE=1; JCODE="epje"; LTYPE="EJOURNAL" ;;
 	epjst | EPJST )  LYNX=1;HREFTYPE=1; JCODE="epjst"; LTYPE="EJOURNAL" ;;
 	epjh | EPJH )  LYNX=1;HREFTYPE=1; JCODE="epjh"; LTYPE="EJOURNAL" ;;
+	epjwc | EPJWC )  LYNX=1;HREFTYPE=1; JCODE="epjwc"; LTYPE="EJOURNAL" ;;
 	gecoa | GeCoA | GECOA )   SD=1;HREFTYPE=0;JCODE="gecoa";LTYPE="EJOURNAL" ;;
 	jphcs | JPhCS | jphycs | JPhyCS )  LYNX=1;HREFTYPE=1; JCODE="jphcs"; LTYPE="EJOURNAL" ;PROPAGANDA=1;;
 	jphg | JPhG | jphyg | JPhyG )  LYNX=1;HREFTYPE=1; JCODE="jphg"; LTYPE="EJOURNAL" ;PROPAGANDA=1;;
@@ -371,6 +377,7 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
 	nimpb | nimb | NIMPB | NIMB) SD=1;HREFTYPE=0; JCODE="nimpb"; LTYPE="EJOURNAL" ;;
 	nupha | npa | NPA | nucphysa ) LYNX=1;HREFTYPE=0; JCODE="nupha"; LTYPE="EJOURNAL" ;;
 	nuphb | npb | NPB | nucphysb ) LYNX=1;HREFTYPE=0; JCODE="nuphb"; LTYPE="EJOURNAL" ;;
+	nuphs | nps | NPS | nucphyss ) LYNX=1;HREFTYPE=0; JCODE="nuphs"; LTYPE="EJOURNAL" ;;
 	obs | OBS )  HREFTYPE=1; JCODE="obs"; LTYPE="ARTICLE" ;;
 	paphs | PAPhS | PAPHS )   HREFTYPE=1; JCODE="paphs"; LTYPE="EJOURNAL" ;;
 	pasj | PASJ )   HREFTYPE=1; JCODE="pasj"; LTYPE="ARTICLE" ;;
@@ -397,6 +404,7 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
 	scoa | SCoA| SCOA )  HREFTYPE=1;JCODE="scoa";LTYPE="ARTICLE" ;;
 	va | VA | ViA | via) SD=1;HREFTYPE=0; JCODE="va"; LTYPE="EJOURNAL" ;;
 	zphy | ZPhy| ZPHY )  LYNX=1;HREFTYPE=1;JCODE="zphy";LTYPE="EJOURNAL" ;;
+	zphya | ZPhyA| ZPHYA )  LYNX=1;HREFTYPE=1;JCODE="zphya";LTYPE="EJOURNAL" ;;
 	* ) 
 	        printf "ERROR: Journal code $JOURNAL not in database, skipping...\n"
 		Error
@@ -927,12 +935,14 @@ jval=$(zenity  --width=400  --height=703 --title "getpaper" --list  --text "Choo
 	FALSE baas "Bulletin of the American Astronomical Society" \
 	FALSE bsrsl "Bulletin de la Societe Royale des Sciences de Liege" \
 	FALSE epja "European Physical Journal A" \
+	FALSE epjas "European Physical Journal A Supplement" \
 	FALSE epjb "European Physical Journal B" \
 	FALSE epjc "European Physical Journal C" \
 	FALSE epjd "European Physical Journal D" \
 	FALSE epje "European Physical Journal E" \
 	FALSE epjst "European Physical Journal ST" \
 	FALSE epjh "European Physical Journal H" \
+	FALSE epjwc "European Physical Journal Web of Conferences" \
 	FALSE gecoa "Geochimica et Cosmochimica Acta" \
 	FALSE jphcs "Journal of Physics Conference Series" \
 	FALSE jphg "Journal of Physics G: Nuclear and Particle Physics" \
@@ -948,6 +958,7 @@ jval=$(zenity  --width=400  --height=703 --title "getpaper" --list  --text "Choo
 	FALSE nimpb "Nuclear Instruments and Methods in Physics Research B" \
 	FALSE nupha "Nuclear Physics A" \
 	FALSE nuphb "Nuclear Physics B" \
+	FALSE nuphs "Nuclear Physics Supplement" \
 	FALSE obs "The Observatory" \
 	FALSE paphs "Proceedings of the American Philosophical Society" \
 	FALSE pasj "Publications of the Astronomical Society of Japan" \
@@ -974,6 +985,7 @@ jval=$(zenity  --width=400  --height=703 --title "getpaper" --list  --text "Choo
 	FALSE scoa "Smithsonian Contributions to Astrophysics" \
 	FALSE va "Vistas in Astronomy" \
 	FALSE zphy "Zeitschrift fur Physik" \
+	FALSE zphya "Zeitschrift fur Physik A" \
 )
 if [ ! -z $jval ];then
 	jflag=1
