@@ -372,9 +372,9 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
 	natur | nature | Nature | Natur ) NATURE=1; HREFTYPE=1; JCODE="natur"; LTYPE="EJOURNAL" ;;
 	natph | NatPh )  LYNX=1; HREFTYPE=1; JCODE="natph"; LTYPE="EJOURNAL" ;;
 	newar | NewAR | NEWAR )   SD=1;HREFTYPE=0;JCODE="newar";LTYPE="EJOURNAL" ;;
-	nim | nucim | NIM | NucIM) SD=1;HREFTYPE=0; JCODE="nucim"; LTYPE="EJOURNAL" ;;
-	nimpa | nima | NIMPA | NIMA) SD=1;HREFTYPE=0; JCODE="nimpa"; LTYPE="EJOURNAL" ;;
-	nimpb | nimb | NIMPB | NIMB) SD=1;HREFTYPE=0; JCODE="nimpb"; LTYPE="EJOURNAL" ;;
+	nim | nucim | NIM | NucIM) LYNX=1;HREFTYPE=0; JCODE="nucim"; LTYPE="EJOURNAL" ;;
+	nimpa | nima | NIMPA | NIMA) LYNX=1;HREFTYPE=0; JCODE="nimpa"; LTYPE="EJOURNAL" ;;
+	nimpb | nimb | NIMPB | NIMB) LYNX=1;HREFTYPE=0; JCODE="nimpb"; LTYPE="EJOURNAL" ;;
 	nupha | npa | NPA | nucphysa ) LYNX=1;HREFTYPE=0; JCODE="nupha"; LTYPE="EJOURNAL" ;;
 	nuphb | npb | NPB | nucphysb ) LYNX=1;HREFTYPE=0; JCODE="nuphb"; LTYPE="EJOURNAL" ;;
 	nuphs | nps | NPS | nucphyss ) LYNX=1;HREFTYPE=0; JCODE="nuphs"; LTYPE="EJOURNAL" ;;
