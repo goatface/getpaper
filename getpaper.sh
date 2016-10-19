@@ -1,6 +1,6 @@
 #!/bin/bash
 # getpaper
-VERSION=1.21
+VERSION=1.22
 # Copyright 2010-2016  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -22,7 +22,6 @@ VERSION=1.21
 # Read in or create .getpaperrc
 
 # To do:  'file' version only does the first line...not used this in years
-#	Oflag should open even if it's already downloaded (need to create $FILENAME outside DownloadPdf etc)	 
 #	LYNX flag is probably appropriate for most journals...many old methods don't work any longer
 # 	GUI mode is mostly broken since it is not mirroring the methods really
 function InitVariables () {
@@ -372,12 +371,12 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
 	natur | nature | Nature | Natur ) NATURE=1; HREFTYPE=1; JCODE="natur"; LTYPE="EJOURNAL" ;;
 	natph | NatPh )  LYNX=1; HREFTYPE=1; JCODE="natph"; LTYPE="EJOURNAL" ;;
 	newar | NewAR | NEWAR )   SD=1;HREFTYPE=0;JCODE="newar";LTYPE="EJOURNAL" ;;
-	nim | nucim | NIM | NucIM) LYNX=1;HREFTYPE=0; JCODE="nucim"; LTYPE="EJOURNAL" ;;
-	nimpa | nima | NIMPA | NIMA) LYNX=1;HREFTYPE=0; JCODE="nimpa"; LTYPE="EJOURNAL" ;;
-	nimpb | nimb | NIMPB | NIMB) LYNX=1;HREFTYPE=0; JCODE="nimpb"; LTYPE="EJOURNAL" ;;
-	nupha | npa | NPA | nucphysa ) LYNX=1;HREFTYPE=0; JCODE="nupha"; LTYPE="EJOURNAL" ;;
-	nuphb | npb | NPB | nucphysb ) LYNX=1;HREFTYPE=0; JCODE="nuphb"; LTYPE="EJOURNAL" ;;
-	nuphs | nps | NPS | nucphyss ) LYNX=1;HREFTYPE=0; JCODE="nuphs"; LTYPE="EJOURNAL" ;;
+	nim | nucim | NIM | NucIM) SD=1 ;HREFTYPE=0; JCODE="nucim"; LTYPE="EJOURNAL" ;;
+	nimpa | nima | NIMPA | NIMA) SD=1 ;HREFTYPE=0; JCODE="nimpa"; LTYPE="EJOURNAL" ;;
+	nimpb | nimb | NIMPB | NIMB) SD=1 ;HREFTYPE=0; JCODE="nimpb"; LTYPE="EJOURNAL" ;;
+	nupha | npa | NPA | nucphysa ) SD=1; HREFTYPE=0; JCODE="nupha"; LTYPE="EJOURNAL" ;;
+	nuphb | npb | NPB | nucphysb ) SD=1;HREFTYPE=0; JCODE="nuphb"; LTYPE="EJOURNAL" ;;
+	nuphs | nps | NPS | nucphyss ) SD=1;HREFTYPE=0; JCODE="nuphs"; LTYPE="EJOURNAL" ;;
 	obs | OBS )  HREFTYPE=1; JCODE="obs"; LTYPE="ARTICLE" ;;
 	paphs | PAPhS | PAPHS )   HREFTYPE=1; JCODE="paphs"; LTYPE="EJOURNAL" ;;
 	pasj | PASJ )   HREFTYPE=1; JCODE="pasj"; LTYPE="ARTICLE" ;;
@@ -495,7 +494,10 @@ function FetchBibtex() {
 	while [ $i -le $SELECTED  ]
 	do
 		ADSURL="http://adsabs.harvard.edu/cgi-bin/nph-abs_connect?version=1&warnings=YES&partial_bibcd=YES&sort=BIBCODE&db_key=ALL&bibstem=$JCODE&volume=$VOLUME&page=$PAGE&nr_to_return=1&start_nr=$i"
+		echo "Getting BIBCODE from $ADSURL"
 		lynx -source "$ADSURL" > $TMPBIBCODE
+		#debug
+		#cat $TMPBIBCODE
 		BIBCODE=`grep bibcode= $TMPBIBCODE | head -n 1 | sed 's/.*bibcode=//'|sed 's/&.*//'`
 		if [ -z $BIBCODE ];then
 			printf "No BIBCODE could be found!\n"
@@ -555,6 +557,10 @@ function FetchBibtex() {
 		if [ ! "$qflag" ];then
 			echo "$BIBFILE"
 			echo "Skipping..."
+			FILENAME=$(grep -A 50 "$BIBCODE" "$BIBFILE" | grep File | head -n 1 | sed 's/.*{://' | sed 's/:PDF.*//')
+			if [ "$Oflag" ]; then
+				Open
+			fi
 			continue
 		fi
 	fi
@@ -737,13 +743,19 @@ function DownloadPdf () {
 			# the following is no longer valid daid 05 Mar 2011 03:47:48 
 			#LOCALPDF=`grep PDF $TMPURL | sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | grep "origin=search" | head -n 1`
 			# this will get us the right URL; at one point we had to script lynx from wget 404, but now wget works again 
-			LOCALPDF=`grep pdfurl $TMPURL | \
-				head -n 1 | sed 's/.*pdfurl=\"//' | sed 's/\".*//'`
-				#head -n 1 | sed 's/pdfurl=\"//' | sed 's/\".*//'` # old one 28 Jun 2014 07:35:47, SD needs me to throw away leading
-				# another old style for SD 16 Jan 2012 21:19:49 
-				#sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
-				#sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//'`
-				#sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | grep sdarticle.pdf` # don't seem to need this now
+		#19 Oct 2016 18:36:36  I hate SD with all of my little black heart
+		LOCALPDF=`grep -A 1 "article-download-switch" $TMPURL | \
+		tail -n 1 | sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | \
+		sed 's/\".*//' | sed 's/%0D//' | head -n 1 | sed 's$//$http://$' `
+			
+			
+	#		LOCALPDF=`grep pdfurl $TMPURL | \
+	#			head -n 1 | sed 's/.*pdfurl=\"//' | sed 's/\".*//'`
+	#			#head -n 1 | sed 's/pdfurl=\"//' | sed 's/\".*//'` # old one 28 Jun 2014 07:35:47, SD needs me to throw away leading
+	#			# another old style for SD 16 Jan 2012 21:19:49 
+	#			#sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
+	#			#sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//'`
+	#			#sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | grep sdarticle.pdf` # don't seem to need this now
 			if [ "$LOCALPDF" == "" ];then # previous command did not grab a URL, try another way (this was for AIP but now SD)
 				#echo "$LOCALPDF is empty"
 				LOCALPDF=`grep "Download PDF" $TMPURL |  \
