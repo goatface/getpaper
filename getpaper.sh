@@ -1,6 +1,6 @@
 #!/bin/bash
 # getpaper
-VERSION=1.22
+VERSION=1.3
 # Copyright 2010-2016  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -21,11 +21,40 @@ VERSION=1.22
 # Initialize variables
 # Read in or create .getpaperrc
 
-# To do:  'file' version only does the first line...not used this in years
+# TODO: 
+#	'file' version only does the first line...not used this in years
 #	LYNX flag is probably appropriate for most journals...many old methods don't work any longer
 # 	GUI mode is mostly broken since it is not mirroring the methods really
+#	debugging mode (outputs various URLs to STDOUT/ERR, does not put bibtex or paper into library, etc)
+#	make sensible things like LYNXFLAGS and cat onto that rather than lots of different calls
+#	clean up the DownloadPDF mess
+#	depcheck all at once rather than one-by-one (a new user then knows what to download all at once than several tries)
+#	change tab to double space for many instances of the basic structure?
+#	break up long lines for readability
+#	more sane, accurate, and relevant command line output for normal people
+#	ctrl+c sig int catch to clean up
+
+# code from crabat to mimic
+#control_c () { # if we get a Ctrl+C, kill.  If running loop, kill all child run
+#  echo
+#  echo "Received kill signal..."
+#  [ ! $Lflag ] && exit
+#  echo "killing child run processes..."
+#  [ -e .looptmp ] && rm .looptmp
+#  kill -1 $PIDS 2> /dev/null # redirect error since many PIDs won't exist
+#  exit
+#}
+## trap keyboard interrupt 
+#trap control_c SIGINT
+
+# concept to check for and create default config file from
+# https://github.com/matt-lowe/ProfanityFE
 function InitVariables () {
 	CONFIG_FILE=$HOME/.getpaperrc
+	PWD=$(pwd)
+	# find the full path of getpaper
+	# see http://unix.stackexchange.com/questions/9541/find-absolute-path-from-a-script
+	GETPAPERPATH=$(cd ${0%/*} && echo $PWD/${0##*/})
 	# Check for configuration file
 	if [ ! -e $CONFIG_FILE ];then
 	# If no config file, generate a default one as follows:
@@ -62,26 +91,28 @@ TMPURL=\$TMP/.getpaper_url
 TMPAPSDUMP=\$TMP/getpaper_aps_dump.html
 ERRORFILE=\$TMP/.getpaper_error
 LYNXCMD=\$TMP/.getpaper_lynxcmd
+LYNXCFG=\$TMP/.getpaper_lynx.cfg
 # temporary storage for input information...whereever you want
 INPUT=\$TMP/.getpaper_refinput.txt" > $CONFIG_FILE
 	echo "Created new config file at $CONFIG_FILE"
-	echo "Please check the settings, and re-run $0"
+	echo "Please check the settings, and re-run $GETPAPERPATH"
 	exit
 	fi
 	# Get user inputs
 	source $CONFIG_FILE
-
 	# internal variables -- do not change!
 	ERROR=0
 }
 
 # Tell a user how to invoke this script
+# TODO: use new GETPAPER PATH over $0 or redefine $0 etc...?
+# TODO: why is copyright years, my name, etc here and at the top?  consolidate
 function Usage()
 {
 cat <<-ENDOFMESSAGE
 getpaper version $VERSION
 Download, add bibtex, query bibtex, strip propaganda, print, and/or open papers based on reference!
-Copyright 2010-2015 daid kahl - www.goatface.org
+Copyright 2010-2016 daid kahl - www.goatface.org
 
 Usage: 
   $0: [-h] [-q] [-b] [-f file] [-j journal] [-v volume] [-p page] [-c "comments"] [-P] [-O] [-R [user@host]]
@@ -111,6 +142,7 @@ options:
   -p <int>	: <int> is the article first page
   --comment
   -c "<string>": <string> is any comments, in quotes, including spaces
+  -H		: Hacking -- for internal use by getpaper itself.  DO NOT INVOKE DIRECTLY
   --print
   -P 		: Printing is turned on
   --open
@@ -137,6 +169,7 @@ function Die()
 function GetOpts() {
 # basic style from http://stackoverflow.com/questions/17016007/bash-getopts-optional-arguments
 # dislike the builtin getopts
+# TODO: Make all these 0 and change if checks rather than asking if these are empty...what a hack
 	bflag=""
 	qflag=""
 	jflag=""
@@ -145,6 +178,7 @@ function GetOpts() {
 	cflag=""
 	fflag=""
 	bflag=""
+	Hflag=""
 	Pflag=""
 	Oflag=""
 	Rflag=""
@@ -159,6 +193,9 @@ function GetOpts() {
 	            ;;
 	        -q|--query)
 	    	qflag=1
+	            ;;
+	        -H)
+	    	Hflag=1
 	            ;;
 	        -P|--print)
 	    	Pflag=1
@@ -235,6 +272,8 @@ function GetOpts() {
 
 # Check the dependencies to ensure getpaper can run
 function CheckDeps () {
+# TODO: Merge to one exit call
+# TODO: make array to track [program][url]
 	which lynx &>/dev/null || { printf "getpaper requires lynx but it's not in your PATH or not installed.\n\t(see http://lynx.isc.org/)\nAborting.\n" >&2; exit 1; }
 	which wget &>/dev/null || { printf "getpaper requires wget but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/wget/)\nAborting.\n" >&2; exit 1; }
 	which pdfinfo &>/dev/null || { printf "getpaper requires pdfinfo but it's not in your PATH or not installed.\n\t(see http://poppler.freedesktop.org/)\nAborting.\n" >&2; exit 1; }
@@ -242,6 +281,7 @@ function CheckDeps () {
 	which grep &>/dev/null || { printf "getpaper requires grep but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/grep/)\nAborting.\n" >&2; exit 1; }
 	which sed &>/dev/null || { printf "getpaper requires sed but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/sed/)\nAborting.\n" >&2; exit 1; }
 	which awk &>/dev/null || { printf "getpaper requires awk but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/gawk/)\nAborting.\n" >&2; exit 1; }
+	which convert &>/dev/null || { printf "getpaper requires convert which is a part of ImageMagick but it's not in your PATH or not installed.\n\t(see https://www.imagemagick.org)\nAborting.\n" >&2; exit 1; }
 	#if [ $Rflag ];then
 	 #ssh "$USER@$HOST" which wget &>/dev/null || { printf "getpaper requires wget but it's not in the PATH or not installed on your remote server.\n\t(see http://www.gnu.org/software/wget/)\nAborting.\n" >&2; exit 1; }
 	 # fix me (remote lynx is done by alias so not in PATH but it works...arrr)
@@ -251,6 +291,7 @@ function CheckDeps () {
 }
 
 # Track any and all failures for reporting
+# TODO: either separate a new error function for depchecks, etc or make this take a parameter
 function Error () {
 	ERROR=1
 	printf "$JOURNAL\t$VOLUME\t$PAGE\n" >> $ERRORFILE
@@ -334,11 +375,13 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
 	#				0 : full paths given for href
 	#				1 : domain absent from href
 	#				2 : local file name given for href
+	# TODO: Put these inits somewhere else?
 	LYNX= # don't change this!  Initalizes a variable for LYNX
 	APS= # don't change this!  Initalizes a variable for APS
 	SD= # don't change this!  Initalizes a variable for SD; 13 Jan 2016 15:15:48 presently does nothing as SD has regressed to standard methods
 	PROPAGANDA=0 # don't change
 	NATURE=0 # don't change
+	# TODO: Make less of a nightmare.  External config file?!?
 	case "$JOURNAL" in
 	aa  | AA ) HREFTYPE=1; JCODE="a%26a"; LTYPE="ARTICLE" ;;
 	aipc | LYNXC )  LYNX=1; HREFTYPE=1; JCODE="aipc"; LTYPE="EJOURNAL" ; PROPAGANDA=1 ;;
@@ -439,9 +482,13 @@ function TmpCleanUp () {
 	if [ -e $LYNXCMD ];then
 		rm "$LYNXCMD"
 	fi
+	if [ -e $LYNXCFG ];then
+		rm "$LYNXCFG"
+	fi
 }
 
 # For reading in a file
+# TODO: Broken?  Check it and fix if so
 function ParseJVP () { # Parse the Journal/Volume/Page of submission
 	JOURNAL=`printf "$inline"|awk '{printf $1}'`
 	VOLUME=`printf "$inline"|awk '{printf $2}'`
@@ -455,7 +502,7 @@ function ParseJVP () { # Parse the Journal/Volume/Page of submission
 		                          printf("%s ",$i)
 		                       }
 		                    }'`
-	else # broken for now!  It uses inline instead of user input...how to fix it?
+	else # TODO: broken for now!  It uses inline instead of user input...how to fix it?
 		COMMENTS="$cval"
 		#printf "Input comment for BibTex:"
 		#readline COMMENTS
@@ -541,7 +588,11 @@ function FetchBibtex() {
 		printf "Fetching bibtex file from ADS ($ADSBIBTEX)\n"
 		lynx -source "$ADSBIBTEX" | awk 'NR>5' >$TMPBIBTEX
 	fi
-	rm $TMPBIBCODELIST
+	# 28 Nov 2016 20:28:59 the first new run often complains here without the if
+	if [ -e $TMPBIBCODELIST ];then
+	# TODO: why are we doing this?
+		rm $TMPBIBCODELIST
+	fi
 	echo "Processing $BIBCODE..."
 
 	if [ -z $BIBCODE ];then
@@ -601,6 +652,8 @@ function MakeLynxCmd () {
 	# 12 Jan 2016 20:41:56 
 	if [[ $APS -eq 1 ]];then
 	  echo "key ^J" >> "$LYNXCMD" 
+
+# TODO: Clean this shit up
 
 # unfortunately, this causes reloading (which is strange) and thus does not work!
 # view page source
@@ -671,6 +724,102 @@ function MakeLynxCmd () {
 	echo "key y" >> "$LYNXCMD"
 	
 	fi	  
+}
+
+# This function deals with the requirement of APS to click on Einstein's picture
+# The user will still need to fulfill the condition of recognizing Einstein
+# This function allows the user to do that
+# It has lynx use a customized configuration file which enables a command for lynx
+#   to call an external program (it will re-invoke getpaper -H)
+# getpaper -H 
+#   modifies LYNXCMD on-the-fly while lynx is open to download all 8 pictures
+#   Uses ImageMagick's convert tool to put all 8 images into one, with numbers
+#   Gets the user's input via zenity to tell which number was Einstein
+#   Then getpaper can operate normally, by selecting the correct link to download
+function APSTmpCleanUp () {
+        # TODO: please improve this one 28 Nov 2016 17:59:39 
+        for i in $( ls "$TMP"/getpaper*.jpg ); do
+                if [ -e $i ];then
+                  rm -f $i
+                fi  
+        done
+}
+
+function APSHack (){
+	# tmp cleanup needs to be invoked but without breaking the main getpaper
+	#zenity --question --text="Do you like goats?"
+	sleep 1
+	APSTmpCleanUp
+	LYNXTMPDIR=$(ls -dat /tmp/*/ | grep lynx | head -n 1)
+	# TODO: Don't start grepping my motherfucking home directory...
+	# make sure LYNXTMPDIR isn't empty
+	LYNXTMPFILE=$(grep -l "Verification Required" $LYNXTMPDIR*)
+	#LYNXTMPFILE=$LYNXTMPDIR/$(ls -r "$LYNXTMPDIR" | head -n 1)
+
+	APSIMGNUM=0
+	cat "$LYNXTMPFILE" | sed 's/>/>\n/g' | grep captcha | sed 's/.*src="//' | sed 's/".*//' | grep captcha | sed 's$/captcha$http://journals.aps.org/captcha$' | while read line; do let "APSIMGNUM += 1"; wget -O $TMP/getpaper"$APSIMGNUM".jpg "$line"; done
+
+	# see the ImageMagick solution for some of my inspiration here:
+	# http://codegolf.stackexchange.com/questions/98968/go-out-and-vote
+	convert $TMP/getpaper1.jpg $TMP/getpaper2.jpg $TMP/getpaper3.jpg $TMP/getpaper4.jpg $TMP/getpaper5.jpg $TMP/getpaper6.jpg $TMP/getpaper7.jpg $TMP/getpaper8.jpg +append \
+        canvas:white[873x40!] -append \
+        -fill white -pointsize 80 -draw 'text 10,80   " 1   2   3   4   5   6   7   8"' \
+        -fill black -pointsize 80 -draw 'text 8,78   " 1   2   3   4   5   6   7   8"' \
+        -fill black  -pointsize 23 -draw 'text 40,130   "Note to yourself which number is Einstein and press Esc or close the window."' \
+        show:
+	
+	EINSTEIN=$(zenity --entry --title="getpaper APS hack" --text="Which number was Einstein?")
+
+	# search for Einstein
+	echo "key /" >> "$LYNXCMD"
+	echo "key E" >> "$LYNXCMD"
+	echo "key i" >> "$LYNXCMD"
+	echo "key n" >> "$LYNXCMD"
+	echo "key s" >> "$LYNXCMD"
+	echo "key t" >> "$LYNXCMD"
+	echo "key e" >> "$LYNXCMD"
+	echo "key i" >> "$LYNXCMD"
+	echo "key n" >> "$LYNXCMD"
+	# send return command to lynx (will perform the search)
+	echo "key ^J" >> "$LYNXCMD"
+
+	let EINSTEIN=EINSTEIN-1
+	if [[ $EINSTEIN -ne 0 ]];then
+	  COUNTER=0
+	  while [  $COUNTER -lt $EINSTEIN ]; do
+	      let COUNTER=COUNTER+1
+	      echo "key Down Arrow" >> "$LYNXCMD"
+	      #sed -i '0,/#key/s//key/' "$LYNXCMD"
+	  done
+	fi
+
+	FILENAME=$(cat $TMPFILENAME)
+        # tell lynx to download the link
+        echo "key d" >> "$LYNXCMD"
+        # this enters lynx search mode
+        echo "key /" >> "$LYNXCMD"
+        # search for 'Save' (some older lynx required that...)
+        echo "key S" >> "$LYNXCMD"
+        echo "key a" >> "$LYNXCMD"
+        echo "key v" >> "$LYNXCMD"
+        echo "key e" >> "$LYNXCMD"
+        echo "key ^J" >> "$LYNXCMD"
+        # send return command to lynx (will 'Save to disk')
+        echo "key ^J" >> "$LYNXCMD"
+        # erase the line of default contents (suggested filename)
+        echo "key ^U" >> "$LYNXCMD"
+        # now we make a new file name out of our file name
+        #make a line for each character in the download destination path, for single key entry
+        echo "$TMP/$FILENAME" | awk 'BEGIN{FS=""}{for(i=1;i<=NF;i++)print "key "$i}' >> "$LYNXCMD"
+        # send return command to lynx (pass Save To location from above and download)
+        echo "key ^J" >> "$LYNXCMD"
+        # send quit command to lynx
+        echo "key q" >> "$LYNXCMD"
+        # confirm quit
+        echo "key y" >> "$LYNXCMD"
+
+	APSTmpCleanUp
+
 }
 
 # Download the paper
@@ -781,6 +930,7 @@ function DownloadPdf () {
 		#cat $TMPURL |grep PDF | sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//    ' | grep "origin=search" |head -n 1 ;exit # debug new journal
 		FULLPATH="$BASEURL$LOCALPDF"
 	fi
+	# TODO: if not lynx, do this.  if lynx, let them know we are using lynx on some URL and please wait
 	printf "Downloading PDF from $FULLPATH ...\n"
 	# we need to mask as Firefox or wget is denied access by error 403 sometimes
 	if [ $GUI -eq 1 ];then
@@ -834,7 +984,12 @@ function DownloadPdf () {
 			#if [[ "$LYNX" || "$SD" ]]; then
 			if [[ "$LYNX" ]]; then # SD reverts to the old style now?! 28 Jun 2014 07:51:03 
 				MakeLynxCmd
-				lynx -accept_all_cookies -cmd_script="$LYNXCMD" "$ADSLINK"
+				if [[ "$APS" ]];then
+					printf ".h1 Internal Behavior\n.h2 SOURCE_CACHE\nSOURCE_CACHE:FILE\n.h1 External Programs\n.h2 EXTERNAL\nEXTERNAL:http:$GETPAPERPATH -H:TRUE" > "$LYNXCFG"
+					lynx -accept_all_cookies -cmd_script="$LYNXCMD" -cfg="$LYNXCFG" "$ADSLINK" > /dev/null
+				else
+					lynx -accept_all_cookies -cmd_script="$LYNXCMD" "$ADSLINK" > /dev/null
+				fi
 			else
 				#FULLPATH=`echo $FULLPATH | sed 's/\&/\\\&/g'` # testing to avoid wget "Scheme missing" error #cause 500 error for ApJ, etc
 				if [ $NATURE -eq 0 ];then
@@ -1020,6 +1175,10 @@ fi
 InitVariables
 GetOpts $*
 CheckDeps
+if [ "$Hflag" ] ; then
+	APSHack
+	exit
+fi
 TmpCleanUp
 
 if [ -z $1 ];then
@@ -1080,7 +1239,7 @@ do
 	ParseJVP
 	SetJournal
 	FetchBibtex
-	# TO DO: Should get these dynamically from existing bibtex, in the case of --query...
+	# TODO: Should get these dynamically from existing bibtex, in the case of --query...
 	FILEPATH="$LIBPATH/$PAPERTYPE/$YEAR"
 	FILENAME="$JOURNAL.$VOLUME.$PAGE.pdf"
 	echo "$FILENAME" > $TMPFILENAME
