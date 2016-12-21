@@ -33,6 +33,10 @@ VERSION=1.3
 #	break up long lines for readability
 #	more sane, accurate, and relevant command line output for normal people
 #	ctrl+c sig int catch to clean up
+#	"Downloading PDF from  ..." should say something about lynx or give the URL?
+#	after the apshack, it should tell the user it's submitting the requested link number w/ Einstein and downloading the result
+#	Oflag w/ previously downloaded paper is failing ?
+#	[ -z "$Xflag" ] for unset variables
 
 # code from crabat to mimic
 #control_c () { # if we get a Ctrl+C, kill.  If running loop, kill all child run
