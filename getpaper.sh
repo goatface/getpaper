@@ -873,7 +873,9 @@ function DownloadPdf () {
 		#	Once we get the source from ADS, we can nab the redirect URL from a lynx source dump
 		#       Then, magically, a slight hack on the original way works again
 		#13 Jan 2016 14:36:40  this line was under SD for a long time...no idea why!
-		lynx -source -connect_timeout=20 "$ADSLINK" > $TMPURL
+		#lynx -source -connect_timeout=20 "$ADSLINK" > $TMPURL
+		# 19 Jan 2017 19:01:24  SD isn't giving any feedback at all
+		lynx -source -connect_timeout=20 -useragent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_0) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/21.0.1180.79 Safari/537.1" "$ADSLINK" > $TMPURL
 		# holy fuck I hate SD sOooOooOooooooooOOOOOOO much 13 Jan 2016 15:13:17 
 		##if [ "$SD" ];then
 		##	TMPURL2=$(grep 'name="redirectURL"' $TMPURL | sed 's/.*value="//' | sed 's/".*//')
@@ -910,10 +912,13 @@ function DownloadPdf () {
 	#			#sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//'`
 	#			#sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | grep sdarticle.pdf` # don't seem to need this now
 			if [ "$LOCALPDF" == "" ];then # previous command did not grab a URL, try another way (this was for AIP but now SD)
+			# for SD 30 Jan 2017 15:25:02 
+			# last bit was for non-conforming url beginning //www e.g. it is a HREF 0.5 level (includes base url but not http but has //
+			#  href="//www.sciencedirect.com/science/article/pii/S0168900298010092/pdfft?md5=7d6d28f0b4ed0731a689a23be7b2fd04&pid=1-s2.0-S0168900298010092-main.pdf"
 				#echo "$LOCALPDF is empty"
 				LOCALPDF=`grep "Download PDF" $TMPURL |  \
 				sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
-				sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | sed 's/%0D//' | head -n 1`
+				sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | sed 's/%0D//' | sed 's$//$$' | head -n 1`
 			fi
 		fi
 		if [[ $HREFTYPE -eq 1 && $LYNX -eq 0 ]];then # we should really make a flag for if wget is used...we don't need this if we use lynx
