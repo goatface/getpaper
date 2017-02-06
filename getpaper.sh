@@ -37,6 +37,11 @@ VERSION=1.3
 #	after the apshack, it should tell the user it's submitting the requested link number w/ Einstein and downloading the result
 #	Oflag w/ previously downloaded paper is failing ?
 #	[ -z "$Xflag" ] for unset variables
+#	Einstein *or Curie* now for APS
+#	Oflag or others can be set default as on in the rc?
+#	can understand j v p order w/o flags -j -v -p
+#	redirect lynx stderr because it is annoying to see:
+#		Warning: User-Agent string does not contain "Lynx" or "L_y_n_x"!
 
 # code from crabat to mimic
 #control_c () { # if we get a Ctrl+C, kill.  If running loop, kill all child run
@@ -916,7 +921,7 @@ function DownloadPdf () {
 			# last bit was for non-conforming url beginning //www e.g. it is a HREF 0.5 level (includes base url but not http but has //
 			#  href="//www.sciencedirect.com/science/article/pii/S0168900298010092/pdfft?md5=7d6d28f0b4ed0731a689a23be7b2fd04&pid=1-s2.0-S0168900298010092-main.pdf"
 				#echo "$LOCALPDF is empty"
-				LOCALPDF=`grep "Download PDF" $TMPURL |  \
+				LOCALPDF=`grep "Download full text in PDF" $TMPURL |  \
 				sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
 				sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | sed 's/%0D//' | sed 's$//$$' | head -n 1`
 			fi
