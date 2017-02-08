@@ -1,7 +1,7 @@
 #!/bin/bash
 # getpaper
 VERSION=1.3
-# Copyright 2010-2016  daid kahl
+# Copyright 2010-2017  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
 #
@@ -17,9 +17,6 @@ VERSION=1.3
 #
 # You should have received a copy of the GNU General Public License
 # along with getpaper.  If not, see <http://www.gnu.org/licenses/>.
-
-# Initialize variables
-# Read in or create .getpaperrc
 
 # TODO: 
 #	'file' version only does the first line...not used this in years
@@ -42,6 +39,8 @@ VERSION=1.3
 #	can understand j v p order w/o flags -j -v -p
 #	redirect lynx stderr because it is annoying to see:
 #		Warning: User-Agent string does not contain "Lynx" or "L_y_n_x"!
+#	give user the bibcode and download location etc nicely at the end
+#	need to suppress output
 
 # code from crabat to mimic
 #control_c () { # if we get a Ctrl+C, kill.  If running loop, kill all child run
@@ -56,9 +55,12 @@ VERSION=1.3
 ## trap keyboard interrupt 
 #trap control_c SIGINT
 
+# Initialize variables
+# Read in or create .getpaperrc
 # concept to check for and create default config file from
 # https://github.com/matt-lowe/ProfanityFE
 function InitVariables () {
+	AGENT="Links (2.8; Linux 3.14.1-gentoo i686; GNU C 4.8.2; text)" # new 08 Feb 2017 15:57:58 
 	CONFIG_FILE=$HOME/.getpaperrc
 	PWD=$(pwd)
 	# find the full path of getpaper
@@ -121,7 +123,7 @@ function Usage()
 cat <<-ENDOFMESSAGE
 getpaper version $VERSION
 Download, add bibtex, query bibtex, strip propaganda, print, and/or open papers based on reference!
-Copyright 2010-2016 daid kahl - www.goatface.org
+Copyright 2010-2017 daid kahl - www.goatface.org
 
 Usage: 
   $0: [-h] [-q] [-b] [-f file] [-j journal] [-v volume] [-p page] [-c "comments"] [-P] [-O] [-R [user@host]]
@@ -388,6 +390,7 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
 	LYNX= # don't change this!  Initalizes a variable for LYNX
 	APS= # don't change this!  Initalizes a variable for APS
 	SD= # don't change this!  Initalizes a variable for SD; 13 Jan 2016 15:15:48 presently does nothing as SD has regressed to standard methods
+	# note that phlb and nupha show different behavior but are both on SD.  so we need to be careful
 	PROPAGANDA=0 # don't change
 	NATURE=0 # don't change
 	# TODO: Make less of a nightmare.  External config file?!?
@@ -426,7 +429,7 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
 	nim | nucim | NIM | NucIM) SD=1 ;HREFTYPE=0; JCODE="nucim"; LTYPE="EJOURNAL" ;;
 	nimpa | nima | NIMPA | NIMA) SD=1 ;HREFTYPE=0; JCODE="nimpa"; LTYPE="EJOURNAL" ;;
 	nimpb | nimb | NIMPB | NIMB) SD=1 ;HREFTYPE=0; JCODE="nimpb"; LTYPE="EJOURNAL" ;;
-	nupha | npa | NPA | nucphysa ) SD=1; HREFTYPE=0; JCODE="nupha"; LTYPE="EJOURNAL" ;;
+	nupha | npa | NPA | nucphysa ) LYNX=1; SD=1; HREFTYPE=0; JCODE="nupha"; LTYPE="EJOURNAL" ;;
 	nuphb | npb | NPB | nucphysb ) SD=1;HREFTYPE=0; JCODE="nuphb"; LTYPE="EJOURNAL" ;;
 	nuphs | nps | NPS | nucphyss ) SD=1;HREFTYPE=0; JCODE="nuphs"; LTYPE="EJOURNAL" ;;
 	obs | OBS )  HREFTYPE=1; JCODE="obs"; LTYPE="ARTICLE" ;;
@@ -880,7 +883,9 @@ function DownloadPdf () {
 		#13 Jan 2016 14:36:40  this line was under SD for a long time...no idea why!
 		#lynx -source -connect_timeout=20 "$ADSLINK" > $TMPURL
 		# 19 Jan 2017 19:01:24  SD isn't giving any feedback at all
-		lynx -source -connect_timeout=20 -useragent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_0) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/21.0.1180.79 Safari/537.1" "$ADSLINK" > $TMPURL
+		#lynx -source -connect_timeout=20 -useragent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_0) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/21.0.1180.79 Safari/537.1" "$ADSLINK" > $TMPURL
+		#08 Feb 2017 15:04:40  several days later it fails on useragent again
+		lynx -source -connect_timeout=20 -useragent="$AGENT" "$ADSLINK" > $TMPURL
 		# holy fuck I hate SD sOooOooOooooooooOOOOOOO much 13 Jan 2016 15:13:17 
 		##if [ "$SD" ];then
 		##	TMPURL2=$(grep 'name="redirectURL"' $TMPURL | sed 's/.*value="//' | sed 's/".*//')
@@ -921,9 +926,19 @@ function DownloadPdf () {
 			# last bit was for non-conforming url beginning //www e.g. it is a HREF 0.5 level (includes base url but not http but has //
 			#  href="//www.sciencedirect.com/science/article/pii/S0168900298010092/pdfft?md5=7d6d28f0b4ed0731a689a23be7b2fd04&pid=1-s2.0-S0168900298010092-main.pdf"
 				#echo "$LOCALPDF is empty"
-				LOCALPDF=`grep "Download full text in PDF" $TMPURL |  \
+				# 08 Feb 2017 15:37:59  seriously they changed it in 2 days!
+#				LOCALPDF=`grep "Download PDF" $TMPURL |  \
+				#LOCALPDF=`grep "Download full text in PDF" $TMPURL |  \
+				LOCALPDF=`grep "Download [full text in PDF|PDF]" $TMPURL |  \
 				sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
 				sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | sed 's/%0D//' | sed 's$//$$' | head -n 1`
+				#even all SD is not the same anymore...?  NuPhA and PhLB differ for instance 08 Feb 2017 15:46:20 
+				if ( echo "$LOCALPDF" | grep -q "www" );then
+					touch $TMPURL # useless
+				else
+				#hacks
+					LOCALPDF="www.sciencedirect.com""$LOCALPDF"
+				fi
 			fi
 		fi
 		if [[ $HREFTYPE -eq 1 && $LYNX -eq 0 ]];then # we should really make a flag for if wget is used...we don't need this if we use lynx
@@ -950,14 +965,14 @@ function DownloadPdf () {
 	if [ $GUI -eq 1 ];then
 		if [ "$Rflag" ];then # Remote flag is on
 			if [ $NATURE -eq 0 ];then
-				ssh "$USER@$HOST" wget -U 'Mozilla/40.0' --progress=bar:force "$FULLPATH" -O"$TMP/$FILENAME" 2>&1 | (zenity --title "getpaper" --text "Downloading..." --progress --auto-close --auto-kill)
+				ssh "$USER@$HOST" wget -U "$AGENT" --progress=bar:force "$FULLPATH" -O"$TMP/$FILENAME" 2>&1 | (zenity --title "getpaper" --text "Downloading..." --progress --auto-close --auto-kill)
 			elif [ $NATURE -eq 1 ];then
 				#  500 Internal Server Error avoided
 				ssh "$USER@$HOST" wget --header='Accept-Language: en-us,en' --progress=bar:force "$FULLPATH" -O"$TMP/$FILENAME" 2>&1 | (zenity --title "getpaper" --text "Downloading..." --progress --auto-close --auto-kill)
 			fi
 		else # Remote flag is off
 			if [ $NATURE -eq 0 ];then
-				wget -U 'Mozilla/40.0' --progress=bar:force "$FULLPATH" -O"$TMP/$FILENAME" 2>&1 | (zenity --title "getpaper" --text "Downloading..." --progress --auto-close --auto-kill)
+				wget -U "$AGENT" --progress=bar:force "$FULLPATH" -O"$TMP/$FILENAME" 2>&1 | (zenity --title "getpaper" --text "Downloading..." --progress --auto-close --auto-kill)
 			elif [ $NATURE -eq 1 ];then
 				#  500 Internal Server Error avoided
 				wget --header='Accept-Language: en-us,en' --progress=bar:force "$FULLPATH" -O"$TMP/$FILENAME" 2>&1 | (zenity --title "getpaper" --text "Downloading..." --progress --auto-close --auto-kill)
@@ -981,7 +996,7 @@ function DownloadPdf () {
 				ssh "$USER@$HOST" lynx -accept_all_cookies -cmd_script="$LYNXCMD" "$ADSLINK"
 			else
 				if [ $NATURE -eq 0 ];then
-					ssh "$USER@$HOST" wget -U 'Mozilla/40.0' -O "$TMP/$FILENAME" "$FULLPATH" # works
+					ssh "$USER@$HOST" wget -U "$AGENT" -O "$TMP/$FILENAME" "$FULLPATH" # works
 				elif [ $NATURE -eq 1 ];then
 					#  500 Internal Server Error avoided
 					ssh "$USER@$HOST" wget --header='Accept-Language: en-us,en' -O "$TMP/$FILENAME" "$FULLPATH" # works
@@ -995,19 +1010,19 @@ function DownloadPdf () {
 			#"$WGET -U 'Mozilla/5.0' $FULLPATH -O$TMP/$FILENAME"
 		else # Remote flag is off
 			# first test of AIP workaround -- seems to work!
-			#if [[ "$LYNX" || "$SD" ]]; then
+			#if [[ "$LYNX" || "$SD" ]]; then # SD reverts back to newer style? 08 Feb 2017 15:56:14 
 			if [[ "$LYNX" ]]; then # SD reverts to the old style now?! 28 Jun 2014 07:51:03 
 				MakeLynxCmd
 				if [[ "$APS" ]];then
 					printf ".h1 Internal Behavior\n.h2 SOURCE_CACHE\nSOURCE_CACHE:FILE\n.h1 External Programs\n.h2 EXTERNAL\nEXTERNAL:http:$GETPAPERPATH -H:TRUE" > "$LYNXCFG"
 					lynx -accept_all_cookies -cmd_script="$LYNXCMD" -cfg="$LYNXCFG" "$ADSLINK" > /dev/null
 				else
-					lynx -accept_all_cookies -cmd_script="$LYNXCMD" "$ADSLINK" > /dev/null
+					lynx -useragent="$AGENT" -accept_all_cookies -cmd_script="$LYNXCMD" "$ADSLINK" > /dev/null
 				fi
 			else
 				#FULLPATH=`echo $FULLPATH | sed 's/\&/\\\&/g'` # testing to avoid wget "Scheme missing" error #cause 500 error for ApJ, etc
 				if [ $NATURE -eq 0 ];then
-					wget -U 'Mozilla/40.0' -O"$TMP/$FILENAME" "$FULLPATH"
+					wget -U "$AGENT" -O"$TMP/$FILENAME" "$FULLPATH"
 				elif [ $NATURE -eq 1 ];then
 					#  500 Internal Server Error avoided
 					wget --header='Accept-Language: en-us,en' -O"$TMP/$FILENAME" "$FULLPATH"
