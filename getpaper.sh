@@ -921,6 +921,11 @@ function DownloadPdf () {
 	#			#sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
 	#			#sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//'`
 	#			#sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | grep sdarticle.pdf` # don't seem to need this now
+			# SD changed again another couple weeks after 20 Feb 2017 15:25:37 
+			#if ( echo "$LOCALPDF" | grep -q "http:www" );then
+			#  echo "test SD"
+                        #  LOCALPDF=$(echo "$LOCALPDF" | sed 's%http:www%http://www%/' )
+			#fi
 			if [ "$LOCALPDF" == "" ];then # previous command did not grab a URL, try another way (this was for AIP but now SD)
 			# for SD 30 Jan 2017 15:25:02 
 			# last bit was for non-conforming url beginning //www e.g. it is a HREF 0.5 level (includes base url but not http but has //
@@ -931,7 +936,9 @@ function DownloadPdf () {
 				#LOCALPDF=`grep "Download full text in PDF" $TMPURL |  \
 				LOCALPDF=`grep "Download [full text in PDF|PDF]" $TMPURL |  \
 				sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
-				sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | sed 's/%0D//' | sed 's$//$$' | head -n 1`
+				sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | sed 's/%0D//' | head -n 1`
+				#sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | sed 's/%0D//' | sed 's$//$$' | head -n 1`
+			        # SD changed again another couple weeks after 20 Feb 2017 15:25:37 
 				#even all SD is not the same anymore...?  NuPhA and PhLB differ for instance 08 Feb 2017 15:46:20 
 				if ( echo "$LOCALPDF" | grep -q "www" );then
 					touch $TMPURL # useless
