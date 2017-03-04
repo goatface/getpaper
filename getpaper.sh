@@ -60,7 +60,8 @@ VERSION=1.3
 # concept to check for and create default config file from
 # https://github.com/matt-lowe/ProfanityFE
 function InitVariables () {
-	AGENT="Links (2.8; Linux 3.14.1-gentoo i686; GNU C 4.8.2; text)" # new 08 Feb 2017 15:57:58 
+	AGENT="Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.10 Safari/537.36" # 05 Mar 2017 01:00:10 
+	#AGENT="Links (2.8; Linux 3.14.1-gentoo i686; GNU C 4.8.2; text)" # new 08 Feb 2017 15:57:58 
 	CONFIG_FILE=$HOME/.getpaperrc
 	PWD=$(pwd)
 	# find the full path of getpaper
@@ -620,7 +621,7 @@ function FetchBibtex() {
 		if [ ! "$qflag" ];then
 			echo "$BIBFILE"
 			echo "Skipping..."
-			FILENAME=$(grep -A 50 "$BIBCODE" "$BIBFILE" | grep File | head -n 1 | sed 's/.*{://' | sed 's/:PDF.*//')
+			FILENAME=$(grep -A 50 "$BIBCODE" "$BIBFILE" | grep -i File | head -n 1 | sed 's/.*{://' | sed 's/:PDF.*//')
 			if [ "$Oflag" ]; then
 				Open
 			fi
@@ -1029,10 +1030,11 @@ function DownloadPdf () {
 			else
 				#FULLPATH=`echo $FULLPATH | sed 's/\&/\\\&/g'` # testing to avoid wget "Scheme missing" error #cause 500 error for ApJ, etc
 				if [ $NATURE -eq 0 ];then
-					wget -U "$AGENT" -O"$TMP/$FILENAME" "$FULLPATH"
+					wget --header='Accept-Language: en-us,en' -U "$AGENT" -O"$TMP/$FILENAME" "$FULLPATH"
+					#wget --header="Accept: text/html" --user-agent="$AGENT" -O"$TMP/$FILENAME" "$FULLPATH"
 				elif [ $NATURE -eq 1 ];then
 					#  500 Internal Server Error avoided
-					wget --header='Accept-Language: en-us,en' -O"$TMP/$FILENAME" "$FULLPATH"
+					wget --header='Accept-Language: en-us,en' -U "$AGENT" -O"$TMP/$FILENAME" "$FULLPATH"
 				fi
 			fi
 		fi
