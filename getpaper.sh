@@ -844,6 +844,9 @@ function DownloadPdf () {
 	if [ -e $FILEPATH/$FILENAME ];then
 		echo "The paper is already downloaded!"
 		echo "$FILEPATH/$FILENAME"
+		if [ "$Oflag" ]; then
+			Open
+		fi
 		echo "Skipping..."
 		continue
 	fi
@@ -952,10 +955,13 @@ function DownloadPdf () {
 		if [[ $HREFTYPE -eq 1 && $LYNX -eq 0 ]];then # we should really make a flag for if wget is used...we don't need this if we use lynx
 			#domain omitted for href
 			#echo "Debug..."
-			BASEURL=`head -n 1 $TMPURL | sed 's/.*X-URL:\ //'|  sed 's,\(http://[^/]*\)/.*,\1,'`
+			BASEURL=`head -n 1 $TMPURL | sed 's/.*X-URL:\ //'|  sed 's,\(http://[^/]*\)/.*,\1,' | sed 's/\r$//'`
+			if [ $NATURE -eq 1 ];then
+				BASEURL="http://www.nature.com"
+			fi
 			LOCALPDF=`grep PDF $TMPURL | \
 				sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
-				sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | head -n 1`
+				sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//'| sed 's/\r$//' | head -n 1`
 		fi
 		if [ $HREFTYPE -eq 2 ];then
 			#totally local href
@@ -1034,7 +1040,7 @@ function DownloadPdf () {
 					#wget --header="Accept: text/html" --user-agent="$AGENT" -O"$TMP/$FILENAME" "$FULLPATH"
 				elif [ $NATURE -eq 1 ];then
 					#  500 Internal Server Error avoided
-					wget --header='Accept-Language: en-us,en' -U "$AGENT" -O"$TMP/$FILENAME" "$FULLPATH"
+					wget --header='Accept-Language: en-us,en' -U "$AGENT" -O"$TMP/$FILENAME" $FULLPATH
 				fi
 			fi
 		fi
@@ -1112,7 +1118,7 @@ function ErrorReport() {
 # Best to confirm the downloaded item is a PDF file
 function IsPdfValid () { 
 	printf "Checking if PDF appears to be valid...\n"
-	if ( pdfinfo $TMP/$FILENAME 2>&1 | grep "Error: May not be a PDF file\|Syntax Warning: May not be a PDF file (continuing anyway)\|No such file or directory" > /dev/null );then
+	if ( pdfinfo $TMP/"$FILENAME" 2>&1 | grep "Error: May not be a PDF file\|Syntax Warning: May not be a PDF file (continuing anyway)\|No such file or directory" > /dev/null );then
 		printf "Error in downloading the PDF\nMaybe you do not have access\nTerminating...\n"
 		printf "If you confirm the citation information, and the paper is also in ADS, check for a new version of getpaper:\n"
 		printf "\thttp://www.cns.s.u-tokyo.ac.jp/~daid/hack/getpaper.html\n"
