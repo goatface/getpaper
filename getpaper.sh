@@ -1,6 +1,6 @@
 #!/bin/bash
 # getpaper
-VERSION=1.3
+VERSION=1.4
 # Copyright 2010-2017  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -34,7 +34,6 @@ VERSION=1.3
 #	after the apshack, it should tell the user it's submitting the requested link number w/ Einstein and downloading the result
 #	Oflag w/ previously downloaded paper is failing ?
 #	[ -z "$Xflag" ] for unset variables
-#	Einstein *or Curie* now for APS
 #	Oflag or others can be set default as on in the rc?
 #	can understand j v p order w/o flags -j -v -p
 #	redirect lynx stderr because it is annoying to see:
@@ -154,7 +153,6 @@ options:
   -p <int>	: <int> is the article first page
   --comment
   -c "<string>": <string> is any comments, in quotes, including spaces
-  -H		: Hacking -- for internal use by getpaper itself.  DO NOT INVOKE DIRECTLY
   --print
   -P 		: Printing is turned on
   --open
@@ -163,6 +161,11 @@ options:
   -R <user@host>: Remote download through ssh to <user@host>
   		  <user@host> can be omitted if USER and HOST are defined in .getpaperrc
   (NOTE: -f option supersedes the -j -v -p options.)
+  
+  Internal options: DO NOT INVOKE DIRECTLY!
+  
+  --apscaptcha	: Used by getpaper to dynamically download the images for user selection
+  --sdretry	: Used by getpaper to attempt a second condition for ScienceDirect
 
 If zenity is installed, getpaper will enter GUI mode if no options are passed
 
@@ -182,6 +185,7 @@ function GetOpts() {
 # basic style from http://stackoverflow.com/questions/17016007/bash-getopts-optional-arguments
 # dislike the builtin getopts
 # TODO: Make all these 0 and change if checks rather than asking if these are empty...what a hack
+	FLAGS="$@"
 	bflag=""
 	qflag=""
 	jflag=""
@@ -190,10 +194,11 @@ function GetOpts() {
 	cflag=""
 	fflag=""
 	bflag=""
-	Hflag=""
 	Pflag=""
 	Oflag=""
 	Rflag=""
+	APSflag=""
+	SDflag=""
 	argv=()
 	while [ $# -gt 0 ]
 	do
@@ -205,9 +210,6 @@ function GetOpts() {
 	            ;;
 	        -q|--query)
 	    	qflag=1
-	            ;;
-	        -H)
-	    	Hflag=1
 	            ;;
 	        -P|--print)
 	    	Pflag=1
@@ -273,6 +275,12 @@ function GetOpts() {
 		    printf "User is $USER, Host is $HOST for ssh Remote download\n"
 	            shift
 	            ;;
+		--apscaptcha)
+	    	APSflag=1
+	            ;;
+	        --sdretry)
+		SDflag=1
+		    ;;
 	        *)
 	            if [ "${opt:0:1}" = "-" ]; then
 	                Die "${opt}: unknown option."
@@ -417,7 +425,7 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
 	epjst | EPJST )  LYNX=1;HREFTYPE=1; JCODE="epjst"; LTYPE="EJOURNAL" ;;
 	epjh | EPJH )  LYNX=1;HREFTYPE=1; JCODE="epjh"; LTYPE="EJOURNAL" ;;
 	epjwc | EPJWC )  LYNX=1;HREFTYPE=1; JCODE="epjwc"; LTYPE="EJOURNAL" ;;
-	gecoa | GeCoA | GECOA )   SD=1;HREFTYPE=0;JCODE="gecoa";LTYPE="EJOURNAL" ;;
+	gecoa | GeCoA | GECOA )   if [ "$SDflag" ];then LYNX=1; fi;  SD=1;HREFTYPE=0;JCODE="gecoa";LTYPE="EJOURNAL" ;;
 	jphcs | JPhCS | jphycs | JPhyCS )  LYNX=1;HREFTYPE=1; JCODE="jphcs"; LTYPE="EJOURNAL" ;PROPAGANDA=1;;
 	jphg | JPhG | jphyg | JPhyG )  LYNX=1;HREFTYPE=1; JCODE="jphg"; LTYPE="EJOURNAL" ;PROPAGANDA=1;;
 	jpsj | JPSJ  )  HREFTYPE=1; JCODE="jpsj"; LTYPE="EJOURNAL" ;;
@@ -426,18 +434,18 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
 	metro | Metro )  HREFTYPE=1; JCODE="metro"; LTYPE="EJOURNAL" ;;
 	natur | nature | Nature | Natur ) NATURE=1; HREFTYPE=1; JCODE="natur"; LTYPE="EJOURNAL" ;;
 	natph | NatPh )  LYNX=1; HREFTYPE=1; JCODE="natph"; LTYPE="EJOURNAL" ;;
-	newar | NewAR | NEWAR )   SD=1;HREFTYPE=0;JCODE="newar";LTYPE="EJOURNAL" ;;
-	nim | nucim | NIM | NucIM) SD=1 ;HREFTYPE=0; JCODE="nucim"; LTYPE="EJOURNAL" ;;
-	nimpa | nima | NIMPA | NIMA) SD=1 ;HREFTYPE=0; JCODE="nimpa"; LTYPE="EJOURNAL" ;;
-	nimpb | nimb | NIMPB | NIMB) SD=1 ;HREFTYPE=0; JCODE="nimpb"; LTYPE="EJOURNAL" ;;
-	nupha | npa | NPA | nucphysa ) LYNX=1; SD=1; HREFTYPE=0; JCODE="nupha"; LTYPE="EJOURNAL" ;;
-	nuphb | npb | NPB | nucphysb ) SD=1;HREFTYPE=0; JCODE="nuphb"; LTYPE="EJOURNAL" ;;
-	nuphs | nps | NPS | nucphyss ) SD=1;HREFTYPE=0; JCODE="nuphs"; LTYPE="EJOURNAL" ;;
+	newar | NewAR | NEWAR )   if [ "$SDflag" ];then LYNX=1; fi;  SD=1;HREFTYPE=0;JCODE="newar";LTYPE="EJOURNAL" ;;
+	nim | nucim | NIM | NucIM)  if [ "$SDflag" ];then LYNX=1; fi; SD=1 ;HREFTYPE=0; JCODE="nucim"; LTYPE="EJOURNAL" ;;
+	nimpa | nima | NIMPA | NIMA) if [ "$SDflag" ];then LYNX=1; fi; SD=1 ;HREFTYPE=0; JCODE="nimpa"; LTYPE="EJOURNAL" ;;
+	nimpb | nimb | NIMPB | NIMB)  if [ "$SDflag" ];then LYNX=1; fi; SD=1 ;HREFTYPE=0; JCODE="nimpb"; LTYPE="EJOURNAL" ;;
+	nupha | npa | NPA | nucphysa )  if [ "$SDflag" ];then LYNX=1; fi;  SD=1; HREFTYPE=0; JCODE="nupha"; LTYPE="EJOURNAL" ;;
+	nuphb | npb | NPB | nucphysb )  if [ "$SDflag" ];then LYNX=1; fi; SD=1;HREFTYPE=0; JCODE="nuphb"; LTYPE="EJOURNAL" ;;
+	nuphs | nps | NPS | nucphyss )  if [ "$SDflag" ];then LYNX=1; fi; SD=1;HREFTYPE=0; JCODE="nuphs"; LTYPE="EJOURNAL" ;;
 	obs | OBS )  HREFTYPE=1; JCODE="obs"; LTYPE="ARTICLE" ;;
 	paphs | PAPhS | PAPHS )   HREFTYPE=1; JCODE="paphs"; LTYPE="EJOURNAL" ;;
 	pasj | PASJ )   HREFTYPE=1; JCODE="pasj"; LTYPE="ARTICLE" ;;
 	pasp | PASP )   HREFTYPE=1; JCODE="pasp"; LTYPE="ARTICLE" ;;
-	pce | PCE ) SD=1;HREFTYPE=0; JCODE="pce"; LTYPE="EJOURNAL" ;;
+	pce | PCE )  if [ "$SDflag" ];then LYNX=1; fi; SD=1;HREFTYPE=0; JCODE="pce"; LTYPE="EJOURNAL" ;;
 	phrv | pr | PhRv | PHRV )   APS=1;LYNX=1; HREFTYPE=1; JCODE="phrv"; LTYPE="EJOURNAL" ;;
 	pmag | PMag | PMAG )   HREFTYPE=1; JCODE="pmag"; LTYPE="EJOURNAL" ;;
 	ppsa | PPSA  )   HREFTYPE=1; JCODE="ppsa"; LTYPE="EJOURNAL" ;;
@@ -448,16 +456,16 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
 	prc | phrvc | PRC )   APS=1;LYNX=1;HREFTYPE=1;JCODE="phrvc";LTYPE="EJOURNAL" ;;
 	prd | phrvd | PRD )   APS=1;LYNX=1;HREFTYPE=1;JCODE="phrvd";LTYPE="EJOURNAL" ;;
 	pre | phrve | PRE )   APS=1;LYNX=1;HREFTYPE=1;JCODE="phrve";LTYPE="EJOURNAL" ;;
-	phlb | physlb | PhLB )   SD=1;HREFTYPE=0;JCODE="phlb";LTYPE="EJOURNAL" ;;
+	phlb | physlb | PhLB )   if [ "$SDflag" ];then LYNX=1; fi;  SD=1;HREFTYPE=0;JCODE="phlb";LTYPE="EJOURNAL" ;;
 	prl | phrvl | PRL )   APS=1;LYNX=1;HREFTYPE=1;JCODE="phrvl";LTYPE="EJOURNAL" ;;
-	prpnp | PrPNP | ppnp | PPNP) SD=1;HREFTYPE=0; JCODE="prpnp"; LTYPE="EJOURNAL" ;;
+	prpnp | PrPNP | ppnp | PPNP)  if [ "$SDflag" ];then LYNX=1; fi; SD=1;HREFTYPE=0; JCODE="prpnp"; LTYPE="EJOURNAL" ;;
 	pthph | PThPh | PTHPH )   HREFTYPE=1;JCODE="pthph";LTYPE="EJOURNAL" ;;
 	pthps | PThPS | PTHPS )   HREFTYPE=1;JCODE="pthps";LTYPE="EJOURNAL" ;;
 	rsci | RScI )  HREFTYPE=0; JCODE="rsci"; LTYPE="EJOURNAL" ;;
 	rvmp | RvMP | RVMP ) LYNX=1;HREFTYPE=1;JCODE="rvmp";LTYPE="EJOURNAL" ;;
 	science | SCIENCE ) HREFTYPE=1;JCODE="science";LTYPE="ARTICLE" ;;
 	scoa | SCoA| SCOA )  HREFTYPE=1;JCODE="scoa";LTYPE="ARTICLE" ;;
-	va | VA | ViA | via) SD=1;HREFTYPE=0; JCODE="va"; LTYPE="EJOURNAL" ;;
+	va | VA | ViA | via)  if [ "$SDflag" ];then LYNX=1; fi; SD=1;HREFTYPE=0; JCODE="va"; LTYPE="EJOURNAL" ;;
 	zphy | ZPhy| ZPHY )  LYNX=1;HREFTYPE=1;JCODE="zphy";LTYPE="EJOURNAL" ;;
 	zphya | ZPhyA| ZPHYA )  LYNX=1;HREFTYPE=1;JCODE="zphya";LTYPE="EJOURNAL" ;;
 	* ) 
@@ -743,8 +751,8 @@ function MakeLynxCmd () {
 # The user will still need to fulfill the condition of recognizing Einstein
 # This function allows the user to do that
 # It has lynx use a customized configuration file which enables a command for lynx
-#   to call an external program (it will re-invoke getpaper -H)
-# getpaper -H 
+#   to call an external program (it will re-invoke getpaper --apscaptcha)
+# getpaper --apscaptcha 
 #   modifies LYNXCMD on-the-fly while lynx is open to download all 8 pictures
 #   Uses ImageMagick's convert tool to put all 8 images into one, with numbers
 #   Gets the user's input via zenity to tell which number was Einstein
@@ -778,10 +786,10 @@ function APSHack (){
         canvas:white[873x40!] -append \
         -fill white -pointsize 80 -draw 'text 10,80   " 1   2   3   4   5   6   7   8"' \
         -fill black -pointsize 80 -draw 'text 8,78   " 1   2   3   4   5   6   7   8"' \
-        -fill black  -pointsize 23 -draw 'text 40,130   "Note to yourself which number is Einstein and press Esc or close the window."' \
+        -fill black  -pointsize 20 -draw 'text 40,130   "Note to yourself which number is Einstein or Curie and press Esc or close the window."' \
         show:
 	
-	EINSTEIN=$(zenity --entry --title="getpaper APS hack" --text="Which number was Einstein?")
+	EINSTEIN=$(zenity --entry --title="getpaper APS hack" --text="Which number was the physicist?")
 
 	# search for Einstein
 	echo "key /" >> "$LYNXCMD"
@@ -1028,7 +1036,7 @@ function DownloadPdf () {
 			if [[ "$LYNX" ]]; then # SD reverts to the old style now?! 28 Jun 2014 07:51:03 
 				MakeLynxCmd
 				if [[ "$APS" ]];then
-					printf ".h1 Internal Behavior\n.h2 SOURCE_CACHE\nSOURCE_CACHE:FILE\n.h1 External Programs\n.h2 EXTERNAL\nEXTERNAL:http:$GETPAPERPATH -H:TRUE" > "$LYNXCFG"
+					printf ".h1 Internal Behavior\n.h2 SOURCE_CACHE\nSOURCE_CACHE:FILE\n.h1 External Programs\n.h2 EXTERNAL\nEXTERNAL:http:$GETPAPERPATH --apscaptcha:TRUE" > "$LYNXCFG"
 					lynx -accept_all_cookies -cmd_script="$LYNXCMD" -cfg="$LYNXCFG" "$ADSLINK" > /dev/null
 				else
 					lynx -useragent="$AGENT" -accept_all_cookies -cmd_script="$LYNXCMD" "$ADSLINK" > /dev/null
@@ -1110,6 +1118,14 @@ function ErrorReport() {
 		printf "JOURNAL\tVOLUME\tPAGE\n"
 		cat $ERRORFILE
 		printf "***********************************************\n"
+		if [[ "$SD" ]];then
+#	NIM A&B (and other SD as well?) need LYNX=1 for older articles, but not LYNX for newer
+#		1996 -> 'old' ; 2002 -> 'new'
+#		old one is usually scanned and not very good quality as well
+                  printf "\nThis is ScienceDirect so attempting via lynx...\n"
+		  echo "Calling $0 $FLAGS --sdretry"
+		  $0 $FLAGS --sdretry
+		fi
 	fi
 }
 
@@ -1219,7 +1235,7 @@ fi
 InitVariables
 GetOpts $*
 CheckDeps
-if [ "$Hflag" ] ; then
+if [ "$APSflag" ] ; then
 	APSHack
 	exit
 fi
@@ -1288,6 +1304,8 @@ do
 	FILENAME="$JOURNAL.$VOLUME.$PAGE.pdf"
 	echo "$FILENAME" > $TMPFILENAME
 	if [[ -z $qflag  && -z $bflag ]];then # Only do these things without the c(heck) flag and b(ibtex) flag
+		
+		# Loop up to here and toggle LYNX flag on SD if fail IsPdfValid
 		DownloadPdf
 		if [ "$Rval" ];then
 			#echo "Debugging scp..."
@@ -1297,6 +1315,7 @@ do
 			ssh "$USER@$HOST" rm -v "$TMP/$FILENAME"
 		fi
         	IsPdfValid 
+		
 		CheckDir
 
 		if [ $PROPAGANDA -eq 1 ];then
