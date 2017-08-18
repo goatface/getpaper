@@ -30,7 +30,7 @@ VERSION=1.4
 #	break up long lines for readability
 #	more sane, accurate, and relevant command line output for normal people
 #	ctrl+c sig int catch to clean up
-#	"Downloading PDF from  ..." should say something about lynx or give the URL?
+#	"Downloading PDF from  ..." should say something about lynx or give the URL?  It uses $ADSURL
 #	after the apshack, it should tell the user it's submitting the requested link number w/ Einstein and downloading the result
 #	Oflag w/ previously downloaded paper is failing ?
 #	[ -z "$Xflag" ] for unset variables
@@ -139,7 +139,7 @@ options:
   				prl	99	052502	12C+alpha 16N RIB
   			(Comments are used in the bibtex for the user's need.)
   --query
-  -q 		: query (no downloads or bibtex modification)
+  -q 		: query (no downloads nor bibtex modification)
   		  Will inform if the reference is valid, check if you have the bibtex, paper
 		  Can open and/or print if called with those options
   --bibtex
@@ -459,7 +459,7 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
 	phlb | physlb | PhLB )   if [ "$SDflag" ];then LYNX=1; fi;  SD=1;HREFTYPE=0;JCODE="phlb";LTYPE="EJOURNAL" ;;
 	prl | phrvl | PRL )   APS=1;LYNX=1;HREFTYPE=1;JCODE="phrvl";LTYPE="EJOURNAL" ;;
 	prpnp | PrPNP | ppnp | PPNP)  if [ "$SDflag" ];then LYNX=1; fi; SD=1;HREFTYPE=0; JCODE="prpnp"; LTYPE="EJOURNAL" ;;
-	pthph | PThPh | PTHPH )   HREFTYPE=1;JCODE="pthph";LTYPE="EJOURNAL" ;;
+	pthph | PThPh | PTHPH )   HREFTYPE=1;JCODE="pthph";LTYPE="EJOURNAL";LYNX=1 ;;
 	pthps | PThPS | PTHPS )   HREFTYPE=1;JCODE="pthps";LTYPE="EJOURNAL" ;;
 	rsci | RScI )  HREFTYPE=0; JCODE="rsci"; LTYPE="EJOURNAL" ;;
 	rvmp | RvMP | RVMP ) LYNX=1;HREFTYPE=1;JCODE="rvmp";LTYPE="EJOURNAL" ;;
@@ -668,7 +668,11 @@ function MakeLynxCmd () {
 	# send return command to lynx (will perform the search)
 #	echo "key !" >> "$LYNXCMD"
 #	echo "key ," >> "$LYNXCMD"
+	# no idea but SD changes again 18 Aug 2017 18:17:55 
 	echo "key ^J" >> "$LYNXCMD" 
+	if [[ $SD -eq 1 ]];then
+	  echo "key ^J" >> "$LYNXCMD"
+	fi
         # hack for APS because clicking Einstein is bullshit
 	# 12 Jan 2016 20:41:56 
 	if [[ $APS -eq 1 ]];then
@@ -899,18 +903,21 @@ function DownloadPdf () {
 		#08 Feb 2017 15:04:40  several days later it fails on useragent again
 		lynx -source -connect_timeout=20 -useragent="$AGENT" "$ADSLINK" > $TMPURL
 		# holy fuck I hate SD sOooOooOooooooooOOOOOOO much 13 Jan 2016 15:13:17 
-		##if [ "$SD" ];then
-		##	TMPURL2=$(grep 'name="redirectURL"' $TMPURL | sed 's/.*value="//' | sed 's/".*//')
-		##	lynx -source "$TMPURL2" > $TMPURL
-		##	echo "Science (in)Direct hack"
+		if [ "$SD" ];then
+			#TMPURL2=$(grep 'name="redirectURL"' $TMPURL | sed 's/.*value="//' | sed 's/".*//' | sed 's$%3A$:$g' | sed 's$%2F$/$g')
+			#lynx -source "$TMPURL2" > $TMPURL
+			#18 Aug 2017 19:41:45 
+			# SD tries again to use javascript redirect which borks lynx..eat this hack you fucksi
+			ADSLINK=$(grep 'name="redirectURL"' $TMPURL | sed 's/.*value="//' | sed 's/".*//' | sed 's$%3A$:$g' | sed 's$%2F$/$g'| sed 's$%3F.*$$')
+			echo "Science (in)Direct hack"
 		###elif [[ "$Rflag" && "$LYNX" ]]; then # If it IS Remote AND LYNX
 		##	# I think we don't need this anymore 04 Dec 2014 17:10:26 
 		##	# the remote shell will be confused by & in a URL, so we need to make it a literal
 		##	#ADSLINK=`echo $ADSLINK | sed 's/\&/\\\&/g'`
 		##	#ssh "$USER@$HOST" elinks -source "$ADSLINK" > $TMPURL
 		##	#echo "Debugging..."
-		##fi
-		if [ $HREFTYPE -eq 0 ];then
+		fi
+		if [[ $HREFTYPE -eq 0 && $SD -eq 0 ]];then
 			#full paths given for href
 			# at present just for ScienceDirect (from the grep sdarticle.pdf (was origin=search))
 			BASEURL=""
@@ -1118,7 +1125,7 @@ function ErrorReport() {
 		printf "JOURNAL\tVOLUME\tPAGE\n"
 		cat $ERRORFILE
 		printf "***********************************************\n"
-		if [[ "$SD" ]];then
+		if [[ $SD -eq 1 && $SDflag -eq 0 ]];then
 #	NIM A&B (and other SD as well?) need LYNX=1 for older articles, but not LYNX for newer
 #		1996 -> 'old' ; 2002 -> 'new'
 #		old one is usually scanned and not very good quality as well
