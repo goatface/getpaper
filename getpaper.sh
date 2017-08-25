@@ -416,6 +416,7 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
 	aujph | AuJPh )  HREFTYPE=1; JCODE="aujph"; LTYPE="ARTICLE" ;;
 	baas | BAAS  )   HREFTYPE=1; JCODE="baas"; LTYPE="ARTICLE" ;;
 	bsrsl | BSRSL  )   HREFTYPE=2; JCODE="bsrsl"; LTYPE="EJOURNAL" ;;
+	cajph | CAJPH | CaJPh ) LYNX=1; HREFTYPE=1; JCODE="cajph"; LTYPE="EJOURNAL" ;;
 	epja | EPJA )  LYNX=1;HREFTYPE=1; JCODE="epja"; LTYPE="EJOURNAL" ;;
 	epjas | EPJAS )  LYNX=1;HREFTYPE=1; JCODE="epjas"; LTYPE="EJOURNAL" ;;
 	epjb | EPJB )  LYNX=1;HREFTYPE=1; JCODE="epjb"; LTYPE="EJOURNAL" ;;
