@@ -463,7 +463,7 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
 	pthph | PThPh | PTHPH )   HREFTYPE=1;JCODE="pthph";LTYPE="EJOURNAL";LYNX=1 ;;
 	pthps | PThPS | PTHPS )   HREFTYPE=1;JCODE="pthps";LTYPE="EJOURNAL" ;;
 	rsci | RScI )  HREFTYPE=0; JCODE="rsci"; LTYPE="EJOURNAL" ;;
-	rvmp | RvMP | RVMP ) LYNX=1;HREFTYPE=1;JCODE="rvmp";LTYPE="EJOURNAL" ;;
+	rvmp | RvMP | RVMP ) APS=1; LYNX=1;HREFTYPE=1;JCODE="rvmp";LTYPE="EJOURNAL" ;;
 	science | SCIENCE ) HREFTYPE=1;JCODE="science";LTYPE="ARTICLE" ;;
 	scoa | SCoA| SCOA )  HREFTYPE=1;JCODE="scoa";LTYPE="ARTICLE" ;;
 	va | VA | ViA | via)  if [ "$SDflag" ];then LYNX=1; fi; SD=1;HREFTYPE=0; JCODE="va"; LTYPE="EJOURNAL" ;;
@@ -630,9 +630,14 @@ function FetchBibtex() {
 		if [ ! "$qflag" ];then
 			echo "$BIBFILE"
 			echo "Skipping..."
-			FILENAME=$(grep -A 50 "$BIBCODE" "$BIBFILE" | grep -i File | head -n 1 | sed 's/.*{://' | sed 's/:PDF.*//')
+			# return either a filename or the end of the entry '}' whichever is first
+			FILENAME=$(grep -A 50 "$BIBCODE" "$BIBFILE" | grep -i -E -m 1 "File|^}$" | sed 's/.*{://' | sed 's/:PDF.*//')
 			if [ "$Oflag" ]; then
-				Open
+				if ( echo $FILENAME | grep -i "pdf" ); then
+					Open
+				else
+					echo "Digital version is not in your library or not a pdf...cannot open!"
+				fi
 			fi
 			continue
 		fi
