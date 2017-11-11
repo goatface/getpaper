@@ -1,4 +1,4 @@
-##getpaper
+# getpaper
 For a complete description, see [my hompage](http://www.cns.s.u-tokyo.ac.jp/~daid/hack/getpaper.html).
 
 Download, add bibtex, query bibtex, strip propaganda, print, and/or open papers based on reference!
