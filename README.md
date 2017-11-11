@@ -1,5 +1,5 @@
 # getpaper
-For a complete description, see [my hompage](http://www.cns.s.u-tokyo.ac.jp/~daid/hack/getpaper.html).
+For a complete description, see [my hompage](http://www.cns.s.u-tokyo.ac.jp/~daid/hack/getpaper.html).  However, the code hosted here is significantly improved.
 
 Download, add bibtex, query bibtex, strip propaganda, print, and/or open papers based on reference!
 
@@ -11,15 +11,16 @@ Here, _papers_ are academic journal articles, usually somehow related to nuclear
 * If it was instructed to open the paper, it would open the paper you already had but forgot you downloaded
 * Finding that you do not have this paper, it will generate a full bibtex entry, including the abstract
 * `getpaper` will download the paper (if you have subscription access)
+* `getpaper` can let you handle captchas at APS
 * `getpaper` will ensure that what was downloaded looks like a legitimate PDF and not rubbish
 * `getpaper` will strip the first page of the PDF if it's nonsense about the online journal with your IP address
 * `getpaper` will link the downloaded location of the paper into the bibtex entry
 * `getpaper` will create a sensible directory structure like articles/2013 to place the paper if needed
-* `getpaper` will open the paper if you asked it to 
-* `getpaper` will print the paper if you asked it to 
+* `getpaper` will open the paper if you asked it to
+* `getpaper` will print the paper if you asked it to (please have an idea of the page length first!)
 
 If you didn't have subscription access, perhaps because you are at home or travelling...
-* `getpaper` can accept an SSH user and host to a machine at your work, and use that server to transparently download and transfer the paper to your local machine (though you should set up passwordless SSH and ensure your work machine has the right tools).
+* `getpaper` can accept an SSH user and host to a machine at your work, and use that server to transparently download and transfer the paper to your local machine (though you should set up passwordless SSH and ensure your work machine has the right tools).  However, I have been unable to test or bugcheck this option for several years owing to firewalls.  Thus you can expect particularly APS journals would not work at the very least.
 
 **And it will do all that, with a simple, single command.**  That could save you at least sixty seconds doing it yourself!
 
