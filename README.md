@@ -27,10 +27,3 @@ What it will **not** do:
 * Harvest papers blindly.  You need to feed it the relevant Journal/Volume/Page information yourself.  This is to comply with the online journals' TOS.  It keeps you from clicking the mouse, not from never connecting to the internet ever again by downloading the Library of Alexandria.
 
 You probably want to be using [JabRef](http://jabref.sourceforge.net/) to manage your library.bib file.  It's awesome...
-
-For APS hacks, we need to edit lynx.cfg for the comma commmand (apshacks.sh) and SOURCE_CACHE to be FILE
-
-##Other notes
-
-Full port of project from http://www.cns.s.u-tokyo.ac.jp/~daid/hack/getpaper.html including version history.
-
