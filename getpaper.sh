@@ -1,6 +1,6 @@
 #!/bin/bash
 # getpaper
-VERSION=1.41
+VERSION=1.42
 # Copyright 2010-2017  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -455,13 +455,13 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
 	ppsa | PPSA  )   HREFTYPE=1; JCODE="ppsa"; LTYPE="EJOURNAL" ;;
 	ppsb | PPSB  )   HREFTYPE=1;JCODE="ppsb";LTYPE="EJOURNAL" ;;
 	pos | POS | PoS )  HREFTYPE=1; JCODE="pos"; LTYPE="ARTICLE" ;;
-	pra | phrva | PRA )   APS=1;LYNX=1;HREFTYPE=1;JCODE="phrva";LTYPE="EJOURNAL" ;;
-	prb | phrvb | PRB )   APS=1;LYNX=1;HREFTYPE=1;JCODE="phrvb";LTYPE="EJOURNAL" ;;
-	prc | phrvc | PRC )   APS=1;LYNX=1;HREFTYPE=1;JCODE="phrvc";LTYPE="EJOURNAL" ;;
-	prd | phrvd | PRD )   APS=1;LYNX=1;HREFTYPE=1;JCODE="phrvd";LTYPE="EJOURNAL" ;;
-	pre | phrve | PRE )   APS=1;LYNX=1;HREFTYPE=1;JCODE="phrve";LTYPE="EJOURNAL" ;;
+	pra | phrva | PRA )   APS=;LYNX=1;HREFTYPE=1;JCODE="phrva";LTYPE="EJOURNAL" ;;
+	prb | phrvb | PRB )   APS=;LYNX=1;HREFTYPE=1;JCODE="phrvb";LTYPE="EJOURNAL" ;;
+	prc | phrvc | PRC )   APS=;LYNX=1;HREFTYPE=1;JCODE="phrvc";LTYPE="EJOURNAL" ;;
+	prd | phrvd | PRD )   APS=;LYNX=1;HREFTYPE=1;JCODE="phrvd";LTYPE="EJOURNAL" ;;
+	pre | phrve | PRE )   APS=;LYNX=1;HREFTYPE=1;JCODE="phrve";LTYPE="EJOURNAL" ;;
+	prl | phrvl | PRL )   APS=;LYNX=1;HREFTYPE=1;JCODE="phrvl";LTYPE="EJOURNAL" ;;
 	phlb | physlb | PhLB )   if [ "$SDflag" ];then LYNX=1; fi;  SD=1;HREFTYPE=0;JCODE="phlb";LTYPE="EJOURNAL" ;;
-	prl | phrvl | PRL )   APS=1;LYNX=1;HREFTYPE=1;JCODE="phrvl";LTYPE="EJOURNAL" ;;
 	prpnp | PrPNP | ppnp | PPNP)  if [ "$SDflag" ];then LYNX=1; fi; SD=1;HREFTYPE=0; JCODE="prpnp"; LTYPE="EJOURNAL" ;;
 	pthph | PThPh | PTHPH )   HREFTYPE=1;JCODE="pthph";LTYPE="EJOURNAL";LYNX=1 ;;
 	pthps | PThPS | PTHPS )   HREFTYPE=1;JCODE="pthps";LTYPE="EJOURNAL" ;;
