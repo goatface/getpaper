@@ -1,6 +1,6 @@
 #!/bin/bash
 # getpaper
-VERSION=1.4
+VERSION=1.41
 # Copyright 2010-2017  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -292,8 +292,10 @@ function GetOpts() {
 
 # Check the dependencies to ensure getpaper can run
 function CheckDeps () {
+# TODO: Zenity check I guess
 # TODO: Merge to one exit call
 # TODO: make array to track [program][url]
+	DEPCHECK=0
 	which lynx &>/dev/null || { printf "getpaper requires lynx but it's not in your PATH or not installed.\n\t(see http://lynx.isc.org/)\nAborting.\n" >&2; exit 1; }
 	which wget &>/dev/null || { printf "getpaper requires wget but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/wget/)\nAborting.\n" >&2; exit 1; }
 	which pdfinfo &>/dev/null || { printf "getpaper requires pdfinfo but it's not in your PATH or not installed.\n\t(see http://poppler.freedesktop.org/)\nAborting.\n" >&2; exit 1; }
@@ -302,6 +304,7 @@ function CheckDeps () {
 	which sed &>/dev/null || { printf "getpaper requires sed but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/sed/)\nAborting.\n" >&2; exit 1; }
 	which awk &>/dev/null || { printf "getpaper requires awk but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/gawk/)\nAborting.\n" >&2; exit 1; }
 	which convert &>/dev/null || { printf "getpaper requires convert which is a part of ImageMagick but it's not in your PATH or not installed.\n\t(see https://www.imagemagick.org)\nAborting.\n" >&2; exit 1; }
+	which zenity &>/dev/null || { printf "getpaper requires zenity but it's not in your PATH or not installed.\n\t(see https://help.gnome.org/users/zenity/stable/)\nAborting.\n" >&2; exit 1; }
 	#if [ $Rflag ];then
 	 #ssh "$USER@$HOST" which wget &>/dev/null || { printf "getpaper requires wget but it's not in the PATH or not installed on your remote server.\n\t(see http://www.gnu.org/software/wget/)\nAborting.\n" >&2; exit 1; }
 	 # fix me (remote lynx is done by alias so not in PATH but it works...arrr)
@@ -1117,6 +1120,7 @@ function Open () {
 }
 
 # Simply spool the PDF file to a printer
+# TODO: we should make some check on the number of pages to confirm.  20 is probably reasonable
 function Print () {
 	printf "Printing...\n"
 	$PRINTCOMMAND $FILEPATH/$FILENAME
@@ -1150,7 +1154,7 @@ function IsPdfValid () {
 	if ( pdfinfo $TMP/"$FILENAME" 2>&1 | grep "Error: May not be a PDF file\|Syntax Warning: May not be a PDF file (continuing anyway)\|No such file or directory" > /dev/null );then
 		printf "Error in downloading the PDF\nMaybe you do not have access\nTerminating...\n"
 		printf "If you confirm the citation information, and the paper is also in ADS, check for a new version of getpaper:\n"
-		printf "\thttp://www.cns.s.u-tokyo.ac.jp/~daid/hack/getpaper.html\n"
+		printf "\thttps://github.com/goatface/getpaper\n"
 		printf "\t(Many repositories are frequently changing their link structure.)\n"
 		rm -vf $TMP/$FILENAME
 		Error
@@ -1255,7 +1259,6 @@ fi
 TmpCleanUp
 
 if [ -z $1 ];then
-	which zenity &>/dev/null || { Usage; }
 	GUI=1
 	GUI
 else
