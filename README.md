@@ -38,7 +38,7 @@ You probably want to be using [JabRef](http://jabref.sourceforge.net/) to manage
 * [lynx](https://lynx.browser.org/): A scriptable, command-line driven web browser.
 * [wget](http://www.gnu.org/software/wget/): A non-interactive downloading tool.
 * [pdfinfo](https://poppler.freedesktop.org/): Part of poppler or xpdf, `getpaper` uses this to validate a download as being a pdf.
-* [pdftk](https://www.pdflabs.com/tools/pdftk-the-pdf-toolkit/): 
+* [pdftk](https://www.pdflabs.com/tools/pdftk-the-pdf-toolkit/): PDF Toolkit, used to remove any propaganda pages.
 * [imagemagick](https://www.imagemagick.org): A versatile image tool, it is used for the APS Captcha rendering.
 * [zenity](https://help.gnome.org/users/zenity/stable/): A pop-up tool handy for simple GUIs in shell scripts.
 
