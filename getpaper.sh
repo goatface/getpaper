@@ -1,6 +1,6 @@
 #!/bin/bash
 # getpaper
-VERSION=1.42
+VERSION=1.43
 # Copyright 2010-2017  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -296,15 +296,19 @@ function CheckDeps () {
 # TODO: Merge to one exit call
 # TODO: make array to track [program][url]
 	DEPCHECK=0
-	which lynx &>/dev/null || { printf "getpaper requires lynx but it's not in your PATH or not installed.\n\t(see http://lynx.isc.org/)\nAborting.\n" >&2; exit 1; }
-	which wget &>/dev/null || { printf "getpaper requires wget but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/wget/)\nAborting.\n" >&2; exit 1; }
-	which pdfinfo &>/dev/null || { printf "getpaper requires pdfinfo but it's not in your PATH or not installed.\n\t(see http://poppler.freedesktop.org/)\nAborting.\n" >&2; exit 1; }
-	which pdftk &>/dev/null || { printf "getpaper requires pdftk but it's not in your PATH or not installed.\n\t(see http://www.pdflabs.com/tools/pdftk-the-pdf-toolkit/)\nAborting.\n" >&2; exit 1; }
-	which grep &>/dev/null || { printf "getpaper requires grep but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/grep/)\nAborting.\n" >&2; exit 1; }
-	which sed &>/dev/null || { printf "getpaper requires sed but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/sed/)\nAborting.\n" >&2; exit 1; }
-	which awk &>/dev/null || { printf "getpaper requires awk but it's not in your PATH or not installed.\n\t(see http://www.gnu.org/software/gawk/)\nAborting.\n" >&2; exit 1; }
-	which convert &>/dev/null || { printf "getpaper requires convert which is a part of ImageMagick but it's not in your PATH or not installed.\n\t(see https://www.imagemagick.org)\nAborting.\n" >&2; exit 1; }
-	which zenity &>/dev/null || { printf "getpaper requires zenity but it's not in your PATH or not installed.\n\t(see https://help.gnome.org/users/zenity/stable/)\nAborting.\n" >&2; exit 1; }
+	which lynx &>/dev/null || { printf "getpaper requires lynx but it's not in your PATH or not installed.\n\t(see https://lynx.browser.org/)\nAborting.\n" >> $ERRORFILE; ERROR=1; }
+	which wget &>/dev/null || { printf "getpaper requires wget but it's not in your PATH or not installed.\n\t(see https://www.gnu.org/software/wget/)\nAborting.\n" >> $ERRORFILE; ERROR=1; }
+	which pdfinfo &>/dev/null || { printf "getpaper requires pdfinfo but it's not in your PATH or not installed.\n\t(see http://poppler.freedesktop.org/)\nAborting.\n" >> $ERRORFILE; ERROR=1;}
+	which pdftk &>/dev/null || { printf "getpaper requires pdftk but it's not in your PATH or not installed.\n\t(see https://www.pdflabs.com/tools/pdftk-the-pdf-toolkit/)\nAborting.\n" >> $ERRORFILE; ERROR=1; }
+	which grep &>/dev/null || { printf "getpaper requires grep but it's not in your PATH or not installed.\n\t(see https://www.gnu.org/software/grep/)\nAborting.\n" >> $ERRORFILE; ERROR=1; }
+	which sed &>/dev/null || { printf "getpaper requires sed but it's not in your PATH or not installed.\n\t(see https://www.gnu.org/software/sed/)\nAborting.\n" >> $ERRORFILE; ERROR=1;}
+	which awk &>/dev/null || { printf "getpaper requires awk but it's not in your PATH or not installed.\n\t(see https://www.gnu.org/software/gawk/)\nAborting.\n" >> $ERRORFILE; ERROR=1;}
+	which convert &>/dev/null || { printf "getpaper requires convert which is a part of ImageMagick but it's not in your PATH or not installed.\n\t(see https://www.imagemagick.org)\nAborting.\n" >> $ERRORFILE; ERROR=1;}
+	which zenity &>/dev/null || { printf "getpaper requires zenity but it's not in your PATH or not installed.\n\t(see https://help.gnome.org/users/zenity/stable/)\nAborting.\n" >> $ERRORFILE; ERROR=1;}
+	if [ $ERROR -eq 1 ];then
+		cat $ERRORFILE
+		exit 1
+	fi
 	#if [ $Rflag ];then
 	 #ssh "$USER@$HOST" which wget &>/dev/null || { printf "getpaper requires wget but it's not in the PATH or not installed on your remote server.\n\t(see http://www.gnu.org/software/wget/)\nAborting.\n" >&2; exit 1; }
 	 # fix me (remote lynx is done by alias so not in PATH but it works...arrr)
