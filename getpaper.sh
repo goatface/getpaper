@@ -1,6 +1,6 @@
 #!/bin/bash
 # getpaper
-VERSION=1.44
+VERSION=1.45
 # Copyright 2010-2017  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -20,19 +20,16 @@ VERSION=1.44
 
 # TODO: 
 #	'file' version only does the first line...not used this in years
-#	LYNX flag is probably appropriate for most journals...many old methods don't work any longer
 # 	GUI mode is mostly broken since it is not mirroring the methods really
 #	debugging mode (outputs various URLs to STDOUT/ERR, does not put bibtex or paper into library, etc)
 #	make sensible things like LYNXFLAGS and cat onto that rather than lots of different calls
 #	clean up the DownloadPDF mess
-#	depcheck all at once rather than one-by-one (a new user then knows what to download all at once than several tries)
 #	change tab to double space for many instances of the basic structure?
 #	break up long lines for readability
 #	more sane, accurate, and relevant command line output for normal people
 #	ctrl+c sig int catch to clean up
 #	"Downloading PDF from  ..." should say something about lynx or give the URL?  It uses $ADSURL
 #	after the apshack, it should tell the user it's submitting the requested link number w/ Einstein and downloading the result
-#	Oflag w/ previously downloaded paper is failing ?
 #	[ -z "$Xflag" ] for unset variables
 #	Oflag or others can be set default as on in the rc?
 #	can understand j v p order w/o flags -j -v -p
@@ -165,7 +162,7 @@ options:
   Internal options: DO NOT INVOKE DIRECTLY!
   
   --apscaptcha	: Used by getpaper to dynamically download the images for user selection
-  --sdretry	: Used by getpaper to attempt a second condition for ScienceDirect
+  --retry	: Used by getpaper to attempt a second condition for ScienceDirect and APS
 
 If zenity is installed, getpaper will enter GUI mode if no options are passed
 
@@ -198,7 +195,7 @@ function GetOpts() {
 	Oflag=""
 	Rflag=""
 	APSflag=""
-	SDflag=""
+	RETRYflag=""
 	argv=()
 	while [ $# -gt 0 ]
 	do
@@ -278,8 +275,8 @@ function GetOpts() {
 		--apscaptcha)
 	    	APSflag=1
 	            ;;
-	        --sdretry)
-		SDflag=1
+	        --retry)
+		RETRYflag=1
 		    ;;
 	        *)
 	            if [ "${opt:0:1}" = "-" ]; then
@@ -409,6 +406,8 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
 	# note that phlb and nupha show different behavior but are both on SD.  so we need to be careful
 	PROPAGANDA=0 # don't change
 	NATURE=0 # don't change
+	FALSEPAGE=("jphg" "jphcs") # journals where the first two pages need to be stripped sometimes
+	FALSEPAGE=$(echo ${FALSEPAGE[@]}|tr " " "|")
 	# TODO: Make less of a nightmare.  External config file?!?
 	case "$JOURNAL" in
 	aa  | AA ) HREFTYPE=1; JCODE="a%26a"; LTYPE="ARTICLE" ;;
@@ -433,7 +432,7 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
 	epjst | EPJST )  LYNX=1;HREFTYPE=1; JCODE="epjst"; LTYPE="EJOURNAL" ;;
 	epjh | EPJH )  LYNX=1;HREFTYPE=1; JCODE="epjh"; LTYPE="EJOURNAL" ;;
 	epjwc | EPJWC )  LYNX=1;HREFTYPE=1; JCODE="epjwc"; LTYPE="EJOURNAL" ;;
-	gecoa | GeCoA | GECOA )   if [ "$SDflag" ];then LYNX=1; fi;  SD=1;HREFTYPE=0;JCODE="gecoa";LTYPE="EJOURNAL" ;;
+	gecoa | GeCoA | GECOA )   if [ "$RETRYflag" ];then LYNX=1; fi;  SD=1;HREFTYPE=0;JCODE="gecoa";LTYPE="EJOURNAL" ;;
 	jphcs | JPhCS | jphycs | JPhyCS )  LYNX=1;HREFTYPE=1; JCODE="jphcs"; LTYPE="EJOURNAL" ;PROPAGANDA=1;;
 	jphg | JPhG | jphyg | JPhyG )  LYNX=1;HREFTYPE=1; JCODE="jphg"; LTYPE="EJOURNAL" ;PROPAGANDA=1;;
 	jpsj | JPSJ  )  HREFTYPE=1; JCODE="jpsj"; LTYPE="EJOURNAL" ;;
@@ -442,18 +441,18 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
 	metro | Metro )  HREFTYPE=1; JCODE="metro"; LTYPE="EJOURNAL" ;;
 	natur | nature | Nature | Natur ) NATURE=1; HREFTYPE=1; JCODE="natur"; LTYPE="EJOURNAL" ;;
 	natph | NatPh )  LYNX=1; HREFTYPE=1; JCODE="natph"; LTYPE="EJOURNAL" ;;
-	newar | NewAR | NEWAR )   if [ "$SDflag" ];then LYNX=1; fi;  SD=1;HREFTYPE=0;JCODE="newar";LTYPE="EJOURNAL" ;;
-	nim | nucim | NIM | NucIM)  if [ "$SDflag" ];then LYNX=1; fi; SD=1 ;HREFTYPE=0; JCODE="nucim"; LTYPE="EJOURNAL" ;;
-	nimpa | nima | NIMPA | NIMA) if [ "$SDflag" ];then LYNX=1; fi; SD=1 ;HREFTYPE=0; JCODE="nimpa"; LTYPE="EJOURNAL" ;;
-	nimpb | nimb | NIMPB | NIMB)  if [ "$SDflag" ];then LYNX=1; fi; SD=1 ;HREFTYPE=0; JCODE="nimpb"; LTYPE="EJOURNAL" ;;
-	nupha | npa | NPA | nucphysa )  if [ "$SDflag" ];then LYNX=1; fi;  SD=1; HREFTYPE=0; JCODE="nupha"; LTYPE="EJOURNAL" ;;
-	nuphb | npb | NPB | nucphysb )  if [ "$SDflag" ];then LYNX=1; fi; SD=1;HREFTYPE=0; JCODE="nuphb"; LTYPE="EJOURNAL" ;;
-	nuphs | nps | NPS | nucphyss )  if [ "$SDflag" ];then LYNX=1; fi; SD=1;HREFTYPE=0; JCODE="nuphs"; LTYPE="EJOURNAL" ;;
+	newar | NewAR | NEWAR )   if [ "$RETRYflag" ];then LYNX=1; fi;  SD=1;HREFTYPE=0;JCODE="newar";LTYPE="EJOURNAL" ;;
+	nim | nucim | NIM | NucIM)  if [ "$RETRYflag" ];then LYNX=1; fi; SD=1 ;HREFTYPE=0; JCODE="nucim"; LTYPE="EJOURNAL" ;;
+	nimpa | nima | NIMPA | NIMA) if [ "$RETRYflag" ];then LYNX=1; fi; SD=1 ;HREFTYPE=0; JCODE="nimpa"; LTYPE="EJOURNAL" ;;
+	nimpb | nimb | NIMPB | NIMB)  if [ "$RETRYflag" ];then LYNX=1; fi; SD=1 ;HREFTYPE=0; JCODE="nimpb"; LTYPE="EJOURNAL" ;;
+	nupha | npa | NPA | nucphysa )  if [ "$RETRYflag" ];then LYNX=1; fi;  SD=1; HREFTYPE=0; JCODE="nupha"; LTYPE="EJOURNAL" ;;
+	nuphb | npb | NPB | nucphysb )  if [ "$RETRYflag" ];then LYNX=1; fi; SD=1;HREFTYPE=0; JCODE="nuphb"; LTYPE="EJOURNAL" ;;
+	nuphs | nps | NPS | nucphyss )  if [ "$RETRYflag" ];then LYNX=1; fi; SD=1;HREFTYPE=0; JCODE="nuphs"; LTYPE="EJOURNAL" ;;
 	obs | OBS )  HREFTYPE=1; JCODE="obs"; LTYPE="ARTICLE" ;;
 	paphs | PAPhS | PAPHS )   HREFTYPE=1; JCODE="paphs"; LTYPE="EJOURNAL" ;;
 	pasj | PASJ )   HREFTYPE=1; JCODE="pasj"; LTYPE="ARTICLE" ;;
 	pasp | PASP )   HREFTYPE=1; JCODE="pasp"; LTYPE="ARTICLE" ;;
-	pce | PCE )  if [ "$SDflag" ];then LYNX=1; fi; SD=1;HREFTYPE=0; JCODE="pce"; LTYPE="EJOURNAL" ;;
+	pce | PCE )  if [ "$RETRYflag" ];then LYNX=1; fi; SD=1;HREFTYPE=0; JCODE="pce"; LTYPE="EJOURNAL" ;;
 	phrv | pr | PhRv | PHRV )   APS=1;LYNX=1; HREFTYPE=1; JCODE="phrv"; LTYPE="EJOURNAL" ;;
 	pmag | PMag | PMAG )   HREFTYPE=1; JCODE="pmag"; LTYPE="EJOURNAL" ;;
 	ppsa | PPSA  )   HREFTYPE=1; JCODE="ppsa"; LTYPE="EJOURNAL" ;;
@@ -465,15 +464,15 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
 	prd | phrvd | PRD )   APS=1;LYNX=1;HREFTYPE=1;JCODE="phrvd";LTYPE="EJOURNAL" ;;
 	pre | phrve | PRE )   APS=1;LYNX=1;HREFTYPE=1;JCODE="phrve";LTYPE="EJOURNAL" ;;
 	prl | phrvl | PRL )   APS=1;LYNX=1;HREFTYPE=1;JCODE="phrvl";LTYPE="EJOURNAL" ;;
-	phlb | physlb | PhLB )   if [ "$SDflag" ];then LYNX=1; fi;  SD=1;HREFTYPE=0;JCODE="phlb";LTYPE="EJOURNAL" ;;
-	prpnp | PrPNP | ppnp | PPNP)  if [ "$SDflag" ];then LYNX=1; fi; SD=1;HREFTYPE=0; JCODE="prpnp"; LTYPE="EJOURNAL" ;;
+	phlb | physlb | PhLB )   if [ "$RETRYflag" ];then LYNX=1; fi;  SD=1;HREFTYPE=0;JCODE="phlb";LTYPE="EJOURNAL" ;;
+	prpnp | PrPNP | ppnp | PPNP)  if [ "$RETRYflag" ];then LYNX=1; fi; SD=1;HREFTYPE=0; JCODE="prpnp"; LTYPE="EJOURNAL" ;;
 	pthph | PThPh | PTHPH )   HREFTYPE=1;JCODE="pthph";LTYPE="EJOURNAL";LYNX=1 ;;
 	pthps | PThPS | PTHPS )   HREFTYPE=1;JCODE="pthps";LTYPE="EJOURNAL" ;;
 	rsci | RScI )  HREFTYPE=0; JCODE="rsci"; LTYPE="EJOURNAL" ;;
 	rvmp | RvMP | RVMP ) APS=1; LYNX=1;HREFTYPE=1;JCODE="rvmp";LTYPE="EJOURNAL" ;;
 	science | SCIENCE ) HREFTYPE=1;JCODE="science";LTYPE="ARTICLE" ;;
 	scoa | SCoA| SCOA )  HREFTYPE=1;JCODE="scoa";LTYPE="ARTICLE" ;;
-	va | VA | ViA | via)  if [ "$SDflag" ];then LYNX=1; fi; SD=1;HREFTYPE=0; JCODE="va"; LTYPE="EJOURNAL" ;;
+	va | VA | ViA | via)  if [ "$RETRYflag" ];then LYNX=1; fi; SD=1;HREFTYPE=0; JCODE="va"; LTYPE="EJOURNAL" ;;
 	zphy | ZPhy| ZPHY )  LYNX=1;HREFTYPE=1;JCODE="zphy";LTYPE="EJOURNAL" ;;
 	zphya | ZPhyA| ZPHYA )  LYNX=1;HREFTYPE=1;JCODE="zphya";LTYPE="EJOURNAL" ;;
 	* ) 
@@ -548,6 +547,11 @@ function ParseJVP () { # Parse the Journal/Volume/Page of submission
 
 # Download the Bibtex from Harvard's wonderful ADS
 function FetchBibtex() { 
+	if ( echo "$JOURNAL" | grep -qE "$FALSEPAGE" && [[ $RETRYflag -eq 1 ]] ); then
+	  printf "Changing PAGE from $PAGE "
+	  PAGE=$(echo "$PAGE" | sed 's/[0-9][0-9]//')
+	  printf "to $PAGE.\n"
+	fi
 	if [ ! -d $LIBPATH ]; then
 		printf "$LIBPATH does not exist!\nCreating your library directory.\n"
 		mkdir $LIBPATH
@@ -591,7 +595,7 @@ function FetchBibtex() {
 	if [ $SELECTED -gt 1 ];then
 		if [ $GUI -eq 1 ];then
 		# this zenity call looks strange because we need it to properly interpret the different single values
-			ZENCMD='zenity  --title "getpaper" --list  --text "Multiple hits.  Choose the paper you want:" --radiolist  --column "" --column "Key" --column "Paper Title"'
+			ZENCMD='zenity  --title "getpaper" --list  --text "Multiple hits.  The following matching entires were found:" --radiolist  --column "" --column "Key" --column "Paper Title"'
 			ZENARG=""
 			while read line
 			do
@@ -688,7 +692,7 @@ function MakeLynxCmd () {
 	fi
         # hack for APS because clicking Einstein is bullshit
 	# 12 Jan 2016 20:41:56 
-	if [[ $APS -eq 1 ]];then
+	if [[ $APS -eq 1 && $RETRYflag -eq 1 ]];then
 	  echo "key ^J" >> "$LYNXCMD" 
 
 # TODO: Clean this shit up
@@ -1055,7 +1059,7 @@ function DownloadPdf () {
 			#if [[ "$LYNX" || "$SD" ]]; then # SD reverts back to newer style? 08 Feb 2017 15:56:14 
 			if [[ "$LYNX" ]]; then # SD reverts to the old style now?! 28 Jun 2014 07:51:03 
 				MakeLynxCmd
-				if [[ "$APS" ]];then
+				if [[ "$APS" && "$RETRYflag" ]];then
 					printf ".h1 Internal Behavior\n.h2 SOURCE_CACHE\nSOURCE_CACHE:FILE\n.h1 External Programs\n.h2 EXTERNAL\nEXTERNAL:http:$GETPAPERPATH --apscaptcha:TRUE" > "$LYNXCFG"
 					lynx -accept_all_cookies -cmd_script="$LYNXCMD" -cfg="$LYNXCFG" "$ADSLINK" > /dev/null
 				else
@@ -1139,13 +1143,27 @@ function ErrorReport() {
 		printf "JOURNAL\tVOLUME\tPAGE\n"
 		cat $ERRORFILE
 		printf "***********************************************\n"
-		if [[ $SD -eq 1 && $SDflag -eq 0 ]];then
-#	NIM A&B (and other SD as well?) need LYNX=1 for older articles, but not LYNX for newer
-#		1996 -> 'old' ; 2002 -> 'new'
-#		old one is usually scanned and not very good quality as well
-                  printf "\nThis is ScienceDirect so attempting via lynx...\n"
-		  echo "Calling $0 $FLAGS --sdretry"
-		  $0 $FLAGS --sdretry
+		if [[ $RETRYflag -eq 0 ]];then
+		  #if ( (echo "$JOURNAL" | grep -qE "$FALSEPAGE" )  );then
+		  if ( ( [[ $SD -eq 1 || $APS -eq 1 ]] || echo "$JOURNAL" | grep -qE "$FALSEPAGE" ) && [[ $RETRYflag -eq 0 ]] );then
+		  #if ( echo "$JOURNAL" | grep -q "$FALSEPAGE" && [[ $RETRYflag -eq 1 ]] ); then
+		  printf "\nI see there was a problem, but let me try something else.\n"
+		  #	NIM A&B (and other SD as well?) need LYNX=1 for older articles, but not LYNX for newer
+		  #		1996 -> 'old' ; 2002 -> 'new'
+		  #		old one is usually scanned and not very good quality as well
+		  # As to APS, some are open access journals, so we don't need the captcha in those cases
+                    if [[ $SD -eq 1 ]]; then
+		      printf "\nThis is ScienceDirect and an older article so attempting via lynx...\n"
+		    fi
+                    if [[ $APS -eq 1 ]]; then
+		      printf "\nThis is APS, so it must not be an open access article.  I'll try again and give you the captcha...\n"
+		    fi
+		    if ( echo "$JOURNAL" | grep -qE "$FALSEPAGE" ); then
+		      printf "\nThis is $JOURNAL and sometimes the two preceeding numbers of the page are not used by ADS.  I'll try again by modifying that...\n"
+		    fi
+		    echo "Calling $0 $FLAGS --retry"
+		    $0 $FLAGS --retry
+		  fi
 		fi
 	fi
 }
@@ -1256,7 +1274,7 @@ fi
 InitVariables
 GetOpts $*
 CheckDeps
-if [ "$APSflag" ] ; then
+if [[ "$APSflag" ]] ; then
 	APSHack
 	exit
 fi
