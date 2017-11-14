@@ -1,6 +1,6 @@
 #!/bin/bash
 # getpaper
-VERSION=1.46
+VERSION=1.47
 # Copyright 2010-2017  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -356,6 +356,7 @@ function JournalList() {
   printf "nuphs\tNuclear Physics Supplement\n"
   printf "obs\tThe Observatory\n"
   printf "paphs\tProceedings of the American Philosophical Society\n" # none online via ADS
+  printf "pasa\tPublications of the Astronomical Society of Australia\n" # none online via ADS
   printf "pce\tPhysics and Chemsitry of the Earth\n"
   printf "phrv\tPhysical Review\n"
   printf "pmag\tPhilosophical Magazine\n"
@@ -442,6 +443,7 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
     nuphs | nps | NPS | nucphyss )  if [ "$RETRYflag" ];then LYNX=1; fi; SD=1;HREFTYPE=0; JCODE="nuphs"; LTYPE="EJOURNAL" ;;
     obs | OBS )  HREFTYPE=1; JCODE="obs"; LTYPE="ARTICLE" ;;
     paphs | PAPhS | PAPHS )   HREFTYPE=1; JCODE="paphs"; LTYPE="EJOURNAL" ;;
+    pasa |PASA )  HREFTYPE=1; JCODE="pasa"; LTYPE="ARTICLE" ;;
     pasj | PASJ )   HREFTYPE=1; JCODE="pasj"; LTYPE="ARTICLE" ;;
     pasp | PASP )   HREFTYPE=1; JCODE="pasp"; LTYPE="ARTICLE" ;;
     pce | PCE )  if [ "$RETRYflag" ];then LYNX=1; fi; SD=1;HREFTYPE=0; JCODE="pce"; LTYPE="EJOURNAL" ;;
@@ -1059,6 +1061,7 @@ function GUI () {
     FALSE nuphs "Nuclear Physics Supplement" \
     FALSE obs "The Observatory" \
     FALSE paphs "Proceedings of the American Philosophical Society" \
+    FALSE pasa "Publications of the Astronomical Society of Australia" \
     FALSE pasj "Publications of the Astronomical Society of Japan" \
     FALSE pasp "Publications of the Astronomical Society of the Pacific" \
     FALSE phrv "Physical Review" \
