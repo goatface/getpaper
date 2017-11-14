@@ -35,6 +35,7 @@ VERSION=1.47
 #		Warning: User-Agent string does not contain "Lynx" or "L_y_n_x"!
 #	give user the bibcode and download location etc nicely at the end
 #	need to suppress output
+#	distinguish save points for multiple-return query.  Can test via getpaper -j pasa -v 25 -p 1 -O
 
 # code from crabat to mimic
 #control_c () { # if we get a Ctrl+C, kill.  If running loop, kill all child run
@@ -537,6 +538,7 @@ function ParseJVP () { # Parse the Journal/Volume/Page of submission
 
 # Download the Bibtex from Harvard's wonderful ADS
 function FetchBibtex() { 
+  CHOICE=0
   if ( echo "$JOURNAL" | grep -qE "$FALSEPAGE" && [[ $RETRYflag -eq 1 ]] ); then
     printf "Changing PAGE from $PAGE "
     PAGE=$(echo "$PAGE" | sed 's/[0-9][0-9]//')
@@ -579,33 +581,33 @@ function FetchBibtex() {
     i=$[$i+1]
   done
   if [ $SELECTED -gt 1 ];then
-  if [ $GUI -eq 1 ];then
-    # this zenity call looks strange because we need it to properly interpret the different single values
-    ZENCMD='zenity  --title "getpaper" --list  --text "Multiple hits.  The following matching entires were found:" --radiolist  --column "" --column "Key" --column "Paper Title"'
-    ZENARG=""
-    while read line
-    do
-      p1=`echo $line | awk '{print $1 }'`
-      p2=`echo $line | awk '{$1="";print}' | sed 's/\ //'`
-      ZENARG="$ZENARG FALSE $p1 $p2"
-    done < $TMPBIBCODELIST
-    ZENCMD="$ZENCMD $ZENARG"
-    BIBCODE=`echo $ZENCMD | bash`
-  else
-    echo "Multiple hits.  Choose the paper you want:"
-    i=1
-    while read line
-    do
-      echo "$i) $line"
-      i=$[$i+1]
-    done < $TMPBIBCODELIST
-    echo "Select paper number to download:"
-    read CHOICE <&3 # reading from the stdin redirect defined
-    BIBCODE=`cat $TMPBIBCODELIST | awk 'NR==v1' v1=$CHOICE | awk '{printf $1}'`
-  fi
-  ADSBIBTEX="http://adsabs.harvard.edu/cgi-bin/nph-bib_query?bibcode=$BIBCODE&data_type=BIBTEXPLUS&db_key=ALL&nocookieset=1"
-  printf "Fetching bibtex file from ADS ($ADSBIBTEX)\n"
-  lynx -source "$ADSBIBTEX" | awk 'NR>5' >$TMPBIBTEX
+    if [ $GUI -eq 1 ];then
+      # this zenity call looks strange because we need it to properly interpret the different single values
+      ZENCMD='zenity  --title "getpaper" --list  --text "Multiple hits.  The following matching entires were found:" --radiolist  --column "" --column "Key" --column "Paper Title"'
+      ZENARG=""
+      while read line
+      do
+        p1=`echo $line | awk '{print $1 }'`
+        p2=`echo $line | awk '{$1="";print}' | sed 's/\ //'`
+        ZENARG="$ZENARG FALSE $p1 $p2"
+      done < $TMPBIBCODELIST
+      ZENCMD="$ZENCMD $ZENARG"
+      BIBCODE=`echo $ZENCMD | bash`
+    else
+      echo "Multiple hits.  Choose the paper you want:"
+      i=1
+      while read line
+      do
+        echo "$i) $line"
+        i=$[$i+1]
+      done < $TMPBIBCODELIST
+      echo "Select paper number to download:"
+      read CHOICE <&3 # reading from the stdin redirect defined
+      BIBCODE=`cat $TMPBIBCODELIST | awk 'NR==v1' v1=$CHOICE | awk '{printf $1}'`
+    fi
+    ADSBIBTEX="http://adsabs.harvard.edu/cgi-bin/nph-bib_query?bibcode=$BIBCODE&data_type=BIBTEXPLUS&db_key=ALL&nocookieset=1"
+    printf "Fetching bibtex file from ADS ($ADSBIBTEX)\n"
+    lynx -source "$ADSBIBTEX" | awk 'NR>5' >$TMPBIBTEX
   fi
   # 28 Nov 2016 20:28:59 the first new run often complains here without the if
   if [ -e $TMPBIBCODELIST ];then
@@ -834,8 +836,8 @@ function DownloadPdf () {
         head -n 1 | sed 's/.*pdfurl=\"//' | sed 's/\".*//'`
       if [ "$LOCALPDF" == "" ];then # previous command did not grab a URL, try another way (this was for AIP but now SD)
       # last bit was for non-conforming url beginning //www e.g. it is a HREF 0.5 level (includes base url but not http but has //
-        LOCALPDF=`grep "Download PDF" $TMPURL |  \
-        #LOCALPDF=`grep "Download full text in PDF" $TMPURL |  \
+      # LOCALPDF=`grep "Download PDF" $TMPURL |  \
+      # LOCALPDF=`grep "Download full text in PDF" $TMPURL |  \
         LOCALPDF=`grep "Download [full text in PDF|PDF]" $TMPURL |  \
         sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
         sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | sed 's/%0D//' | head -n 1`
@@ -1162,6 +1164,11 @@ do
   # TODO: Should get these dynamically from existing bibtex, in the case of --query...
   FILEPATH="$LIBPATH/$PAPERTYPE/$YEAR"
   FILENAME="$JOURNAL.$VOLUME.$PAGE.pdf"
+  #if [[ $CHOICE -eq 0 ]];then
+  #  FILENAME="$JOURNAL.$VOLUME.$PAGE.pdf"
+  #else
+  #  FILENAME="$JOURNAL.$VOLUME.$PAGE"_"$CHOICE.pdf"
+  #fi
   echo "$FILENAME" > $TMPFILENAME
   if [[ -z $qflag  && -z $bflag ]];then # Only do these things without the q(uery) flag and b(ibtex) flag
     DownloadPdf
