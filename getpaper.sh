@@ -433,7 +433,7 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
     mnras | MNRAS ) HREFTYPE=1; JCODE="mnras"; LTYPE="ARTICLE" ;;
     msrsl | MSRSL  )   HREFTYPE=1; JCODE="msrsl"; LTYPE="ARTICLE" ;;
     metro | Metro )  HREFTYPE=1; JCODE="metro"; LTYPE="EJOURNAL" ;;
-    natur | nature | Nature | Natur ) NATURE=1; HREFTYPE=1; JCODE="natur"; LTYPE="EJOURNAL" ;;
+    natur | nature | Nature | Natur ) LYNX=1; NATURE=1; HREFTYPE=1; JCODE="natur"; LTYPE="EJOURNAL" ;;
     natph | NatPh )  LYNX=1; HREFTYPE=1; JCODE="natph"; LTYPE="EJOURNAL" ;;
     newar | NewAR | NEWAR )   if [ "$RETRYflag" ];then LYNX=1; fi;  SD=1;HREFTYPE=0;JCODE="newar";LTYPE="EJOURNAL" ;;
     nim | nucim | NIM | NucIM)  if [ "$RETRYflag" ];then LYNX=1; fi; SD=1 ;HREFTYPE=0; JCODE="nucim"; LTYPE="EJOURNAL" ;;
