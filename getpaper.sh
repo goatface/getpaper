@@ -1,6 +1,6 @@
 #!/bin/bash
 # getpaper
-VERSION=1.47
+VERSION=1.48
 # Copyright 2010-2017  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -433,7 +433,7 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
     mnras | MNRAS ) HREFTYPE=1; JCODE="mnras"; LTYPE="ARTICLE" ;;
     msrsl | MSRSL  )   HREFTYPE=1; JCODE="msrsl"; LTYPE="ARTICLE" ;;
     metro | Metro )  HREFTYPE=1; JCODE="metro"; LTYPE="EJOURNAL" ;;
-    natur | nature | Nature | Natur ) LYNX=1; NATURE=1; HREFTYPE=1; JCODE="natur"; LTYPE="EJOURNAL" ;;
+    natur | nature | Nature | Natur ) NATURE=1; HREFTYPE=1; JCODE="natur"; LTYPE="EJOURNAL" ;;
     natph | NatPh )  LYNX=1; HREFTYPE=1; JCODE="natph"; LTYPE="EJOURNAL" ;;
     newar | NewAR | NEWAR )   if [ "$RETRYflag" ];then LYNX=1; fi;  SD=1;HREFTYPE=0;JCODE="newar";LTYPE="EJOURNAL" ;;
     nim | nucim | NIM | NucIM)  if [ "$RETRYflag" ];then LYNX=1; fi; SD=1 ;HREFTYPE=0; JCODE="nucim"; LTYPE="EJOURNAL" ;;
@@ -820,10 +820,13 @@ function DownloadPdf () {
     lynx -source -connect_timeout=20 -useragent="$AGENT" "$ADSLINK" > $TMPURL
     # holy fuck I hate SD sOooOooOooooooooOOOOOOO much 13 Jan 2016 15:13:17 
     if   [ "$SD" ];then
-    # SD tries again to use javascript redirect which borks lynx..eat this hack you fucksi
-    ADSLINK=$(grep 'name="redirectURL"' $TMPURL | sed 's/.*value="//' | sed 's/".*//' | sed 's$%3A$:$g' | sed 's$%2F$/$g'| sed 's$%3F.*$$')
+      # SD tries again to use javascript redirect which borks lynx..eat this hack you fucksi
+      ADSLINK=$(grep 'name="redirectURL"' $TMPURL | sed 's/.*value="//' | sed 's/".*//' | sed 's$%3A$:$g' | sed 's$%2F$/$g'| sed 's$%3F.*$$')
+      echo "Rebasing $TMPURL for SD JavaScript redirect..."
+      lynx -source -connect_timeout=20 -useragent="$AGENT" "$ADSLINK" > $TMPURL
     fi
-    if [[ $HREFTYPE -eq 0 && $SD -eq 0 ]];then
+    if [[ $HREFTYPE -eq 0 ]];then
+    ##if [[ $HREFTYPE -eq 0 && $SD -eq 0 ]];then
       #full paths given for href
       BASEURL=""
       #2g in BSD sed gives: sed: more than one number or 'g' in substitute flags
@@ -838,15 +841,19 @@ function DownloadPdf () {
       # last bit was for non-conforming url beginning //www e.g. it is a HREF 0.5 level (includes base url but not http but has //
       # LOCALPDF=`grep "Download PDF" $TMPURL |  \
       # LOCALPDF=`grep "Download full text in PDF" $TMPURL |  \
-        LOCALPDF=`grep "Download [full text in PDF|PDF]" $TMPURL |  \
-        sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
-        sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | sed 's/%0D//' | head -n 1`
-        if ( echo "$LOCALPDF" | grep -q "www" );then
+        #LOCALPDF=`grep "Download [full text in PDF|PDF]" $TMPURL |  \
+        #sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
+        #sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//' | sed 's/%0D//' | head -n 1`
+	LOCALPDF=$(grep "citation_pdf_url" $TMPURL | sed 's/.*content="//' | sed 's/".*//' | sed 's/\&amp;/\&/g' )
+	if ( echo "$LOCALPDF" | grep -q "www" );then
           touch $TMPURL # useless
         else
         #hacks
           LOCALPDF="www.sciencedirect.com""$LOCALPDF"
         fi
+        echo "Rebasing $LOCALPDF for SD JavaScript redirect..."
+        lynx -source -connect_timeout=20 -useragent="$AGENT" "$LOCALPDF" > $TMPURL
+	LOCALPDF=$(grep "Refresh" $TMPURL | sed 's/.*URL=//' | sed 's/".*//')
       fi
     fi
     if [[ $HREFTYPE -eq 1 && $LYNX -eq 0 ]];then # we should really make a flag for if wget is used...we don't need this if we use lynx
