@@ -36,6 +36,7 @@ VERSION=1.48
 #	give user the bibcode and download location etc nicely at the end
 #	need to suppress output
 #	distinguish save points for multiple-return query.  Can test via getpaper -j pasa -v 25 -p 1 -O
+#	recognizes the situation with only bibtex and no download, but does not resolve
 
 # code from crabat to mimic
 #control_c () { # if we get a Ctrl+C, kill.  If running loop, kill all child run
@@ -289,17 +290,18 @@ function GetOpts() {
 function CheckDeps () {
 # TODO: make array to track [program][url]
   DEPCHECK=0
-  which lynx &>/dev/null || { printf "getpaper requires lynx but it's not in your PATH or not installed.\n\t(see https://lynx.browser.org/)\nAborting.\n" >> $ERRORFILE; ERROR=1; }
-  which wget &>/dev/null || { printf "getpaper requires wget but it's not in your PATH or not installed.\n\t(see https://www.gnu.org/software/wget/)\nAborting.\n" >> $ERRORFILE; ERROR=1; }
-  which pdfinfo &>/dev/null || { printf "getpaper requires pdfinfo but it's not in your PATH or not installed.\n\t(see http://poppler.freedesktop.org/)\nAborting.\n" >> $ERRORFILE; ERROR=1;}
-  which pdftk &>/dev/null || { printf "getpaper requires pdftk but it's not in your PATH or not installed.\n\t(see https://www.pdflabs.com/tools/pdftk-the-pdf-toolkit/)\nAborting.\n" >> $ERRORFILE; ERROR=1; }
-  which grep &>/dev/null || { printf "getpaper requires grep but it's not in your PATH or not installed.\n\t(see https://www.gnu.org/software/grep/)\nAborting.\n" >> $ERRORFILE; ERROR=1; }
-  which sed &>/dev/null || { printf "getpaper requires sed but it's not in your PATH or not installed.\n\t(see https://www.gnu.org/software/sed/)\nAborting.\n" >> $ERRORFILE; ERROR=1;}
-  which awk &>/dev/null || { printf "getpaper requires awk but it's not in your PATH or not installed.\n\t(see https://www.gnu.org/software/gawk/)\nAborting.\n" >> $ERRORFILE; ERROR=1;}
-  which convert &>/dev/null || { printf "getpaper requires convert which is a part of ImageMagick but it's not in your PATH or not installed.\n\t(see https://www.imagemagick.org)\nAborting.\n" >> $ERRORFILE; ERROR=1;}
-  which zenity &>/dev/null || { printf "getpaper requires zenity but it's not in your PATH or not installed.\n\t(see https://help.gnome.org/users/zenity/stable/)\nAborting.\n" >> $ERRORFILE; ERROR=1;}
+  which lynx &>/dev/null || { printf "getpaper requires lynx but it's not in your PATH or not installed.\n\t(see https://lynx.browser.org/)\n" >> $ERRORFILE; ERROR=1; }
+  which wget &>/dev/null || { printf "getpaper requires wget but it's not in your PATH or not installed.\n\t(see https://www.gnu.org/software/wget/)\n" >> $ERRORFILE; ERROR=1; }
+  which pdfinfo &>/dev/null || { printf "getpaper requires pdfinfo but it's not in your PATH or not installed.\n\t(see http://poppler.freedesktop.org/)\n" >> $ERRORFILE; ERROR=1;}
+  which pdftk &>/dev/null || { printf "getpaper requires pdftk but it's not in your PATH or not installed.\n\t(see https://www.pdflabs.com/tools/pdftk-the-pdf-toolkit/)\n" >> $ERRORFILE; ERROR=1; }
+  which grep &>/dev/null || { printf "getpaper requires grep but it's not in your PATH or not installed.\n\t(see https://www.gnu.org/software/grep/)\n" >> $ERRORFILE; ERROR=1; }
+  which sed &>/dev/null || { printf "getpaper requires sed but it's not in your PATH or not installed.\n\t(see https://www.gnu.org/software/sed/)\n" >> $ERRORFILE; ERROR=1;}
+  which awk &>/dev/null || { printf "getpaper requires awk but it's not in your PATH or not installed.\n\t(see https://www.gnu.org/software/gawk/)\n" >> $ERRORFILE; ERROR=1;}
+  which convert &>/dev/null || { printf "getpaper requires convert which is a part of ImageMagick but it's not in your PATH or not installed.\n\t(see https://www.imagemagick.org)\n" >> $ERRORFILE; ERROR=1;}
+  which zenity &>/dev/null || { printf "getpaper requires zenity but it's not in your PATH or not installed.\n\t(see https://help.gnome.org/users/zenity/stable/)\n" >> $ERRORFILE; ERROR=1;}
   if [ $ERROR -eq 1 ];then
-  	cat $ERRORFILE
+  	printf "Aborting.\n" >> $ERRORFILE
+        cat $ERRORFILE
   	exit 1
   fi
   #if [ $Rflag ];then
@@ -999,13 +1001,13 @@ function ErrorReport() {
       #		old one is usually scanned and not very good quality as well
       # As to APS, some are open access journals, so we don't need the captcha in those cases
       if [[ $SD -eq 1 ]]; then
-        printf "\nThis is ScienceDirect and an older article so attempting via lynx...\n"
+        printf "\nThis is ScienceDirect and an older article so attempting via lynx...\n\n"
       fi
       if [[ $APS -eq 1 ]]; then
-        printf "\nThis is APS, so it must not be an open access article.  I'll try again and give you the captcha...\n"
+        printf "\nThis is APS, so it must not be an open access article.  I'll try again and give you the captcha...\n\n"
       fi
       if ( echo "$JOURNAL" | grep -qE "$FALSEPAGE" ); then
-        printf "\nThis is $JOURNAL and sometimes the two preceeding numbers of the page are not used by ADS.  I'll try again by modifying that...\n"
+        printf "\nThis is $JOURNAL and sometimes the two preceeding numbers of the page are not used by ADS.  I'll try again by modifying that...\n\n"
       fi
       echo "Calling $0 $FLAGS --retry"
       $0 $FLAGS --retry
@@ -1112,12 +1114,12 @@ function GUI () {
 # Main 
 InitVariables
 GetOpts $*
+TmpCleanUp
 CheckDeps
 if [[ "$APSflag" ]] ; then
   APSHack
   exit
 fi
-TmpCleanUp
 if [ -z $1 ];then
   GUI=1
   GUI

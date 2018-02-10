@@ -1,5 +1,5 @@
 # getpaper
-For a complete description, see [my hompage](http://www.cns.s.u-tokyo.ac.jp/~daid/hack/getpaper.html).  However, the code hosted here is significantly improved.
+For a complete description, see [my hompage](http://goatface.org/hack/getpaper.html).  However, the code hosted here is significantly improved.
 
 ## Functionality
 
