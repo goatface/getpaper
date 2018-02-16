@@ -1,7 +1,7 @@
 #!/bin/bash
 # getpaper
-VERSION=1.48
-# Copyright 2010-2017  daid kahl
+VERSION=1.50
+# Copyright 2010-2018  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
 #
@@ -37,6 +37,8 @@ VERSION=1.48
 #	need to suppress output
 #	distinguish save points for multiple-return query.  Can test via getpaper -j pasa -v 25 -p 1 -O
 #	recognizes the situation with only bibtex and no download, but does not resolve
+#       Zenity calls need updating: Gtk-Message: GtkDialog mapped without a transient parent. This is discouraged.
+#       Need a check if lynx was built with --enable-externs or APS captcha stuff will blindly crash
 
 # code from crabat to mimic
 #control_c () { # if we get a Ctrl+C, kill.  If running loop, kill all child run
@@ -119,7 +121,7 @@ function Usage()
 cat <<-ENDOFMESSAGE
 getpaper version $VERSION
 Download, add bibtex, query bibtex, strip propaganda, print, and/or open papers based on reference!
-Copyright 2010-2017 daid kahl - www.goatface.org
+Copyright 2010-2018 daid kahl - www.goatface.org
 
 Usage: 
   $0: [-h] [-q] [-b] [-f file] [-j journal] [-v volume] [-p page] [-c "comments"] [-P] [-O] [-R [user@host]]
@@ -620,7 +622,7 @@ function FetchBibtex() {
   if [ -z $BIBCODE ];then
     printf "No BIBCODE could be found!\n"
     Error
-    continue
+    return #continue
   else
     echo "$JOURNAL $VOLUME $PAGE is a valid reference"
   fi
@@ -639,7 +641,7 @@ function FetchBibtex() {
       		echo "Digital version is not in your library or not a pdf...cannot open!"
       	fi
       fi
-      continue
+      return 1 # continue
     fi
   fi
   # may add more papertypes here
@@ -652,7 +654,7 @@ function FetchBibtex() {
   if [ -z $PAPERTYPE ];then
     printf "No Papertype found.  Please determine it and modify the script!\n"
     Error
-    continue
+    return #continue
   fi
 }
 
@@ -803,7 +805,7 @@ function DownloadPdf () {
       Open
     fi
     echo "Skipping..."
-    continue
+    return 1 #continue
   fi
   ADSLINK="http://adsabs.harvard.edu/cgi-bin/nph-data_query?bibcode=$BIBCODE&link_type=$LTYPE&db_key=ALL"
   echo "$ADSLINK"
@@ -1026,7 +1028,7 @@ function IsPdfValid () {
     printf "\t(Many repositories are frequently changing their link structure.)\n"
     rm -vf $TMP/$FILENAME
     Error
-    continue
+    return #continue
   fi
 }
 
@@ -1114,12 +1116,12 @@ function GUI () {
 # Main 
 InitVariables
 GetOpts $*
-TmpCleanUp
 CheckDeps
 if [[ "$APSflag" ]] ; then
   APSHack
   exit
 fi
+TmpCleanUp
 if [ -z $1 ];then
   GUI=1
   GUI
@@ -1170,6 +1172,10 @@ do
   ParseJVP
   SetJournal
   FetchBibtex
+  STATUS="$?"
+  if [[ $ERROR -eq 1 || $STATUS -eq 1 ]];then 
+    continue
+  fi
   # TODO: Should get these dynamically from existing bibtex, in the case of --query...
   FILEPATH="$LIBPATH/$PAPERTYPE/$YEAR"
   FILENAME="$JOURNAL.$VOLUME.$PAGE.pdf"
@@ -1181,6 +1187,10 @@ do
   echo "$FILENAME" > $TMPFILENAME
   if [[ -z $qflag  && -z $bflag ]];then # Only do these things without the q(uery) flag and b(ibtex) flag
     DownloadPdf
+    STATUS="$?"
+    if [[ $ERROR -eq 1 || $STATUS -eq 1 ]];then 
+      continue
+    fi
     if [ "$Rval" ];then
       printf "scp'ing downloaded PDF from temporary location on remote server: "
       scp "$USER@$HOST:/$TMP/$FILENAME" "$TMP/$FILENAME"
@@ -1188,6 +1198,9 @@ do
       ssh "$USER@$HOST" rm -v "$TMP/$FILENAME"
     fi
     IsPdfValid 
+    if [ $ERROR -eq 1 ];then
+      continue
+    fi
     CheckDir
     if [ $PROPAGANDA -eq 1 ];then
       StripPropaganda
