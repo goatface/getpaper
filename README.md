@@ -35,7 +35,7 @@ You probably want to be using [JabRef](http://jabref.sourceforge.net/) to manage
 
 `getpaper` is just a single shell script.  While it needs a run configuration file, it will initialize one for you the first time you run it.  Many of the features are possible owing to lovely free software.  Although `getpaper` checks for the dependencies it requires itself, here is a list with a brief description:
 
-* [lynx](https://lynx.browser.org/): A scriptable, command-line driven web browser.
+* [lynx](https://lynx.browser.org/): A scriptable, command-line driven web browser.  This must be compiled with the enable-externs option.
 * [wget](http://www.gnu.org/software/wget/): A non-interactive downloading tool.
 * [pdfinfo](https://poppler.freedesktop.org/): Part of poppler or xpdf, `getpaper` uses this to validate a download as being a pdf.
 * [pdftk](https://www.pdflabs.com/tools/pdftk-the-pdf-toolkit/): PDF Toolkit, used to remove any propaganda pages.
