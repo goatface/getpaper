@@ -1,6 +1,6 @@
 #!/bin/bash
 # getpaper
-VERSION=1.50
+VERSION=1.51
 # Copyright 2010-2018  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -743,7 +743,7 @@ function APSHack (){
     -fill black -pointsize 80 -draw 'text 8,78   " 1   2   3   4   5   6   7   8"' \
     -fill black  -pointsize 20 -draw 'text 40,130   "Note to yourself which number is Einstein or Curie and press Esc or close the window."' \
     show:
-    EINSTEIN=$(zenity --entry --title="getpaper APS hack" --text="Which number was the physicist?")
+    EINSTEIN=$(zenity --entry --title="getpaper APS hack" --text="Which number was the physicist?" 2> /dev/null)
   # search for Einstein
   echo "key /" >> "$LYNXCMD"
   echo "key E" >> "$LYNXCMD"
@@ -857,7 +857,8 @@ function DownloadPdf () {
         fi
         echo "Rebasing $LOCALPDF for SD JavaScript redirect..."
         lynx -source -connect_timeout=20 -useragent="$AGENT" "$LOCALPDF" > $TMPURL
-	LOCALPDF=$(grep "Refresh" $TMPURL | sed 's/.*URL=//' | sed 's/".*//')
+	LOCALPDF=$(grep "Please wait" $TMPURL | sed 's/.*href=//' | sed 's/>here.*//' | sed 's/"//g')
+	#LOCALPDF=$(grep "Refresh" $TMPURL | sed 's/.*URL=//' | sed 's/".*//')
       fi
     fi
     if [[ $HREFTYPE -eq 1 && $LYNX -eq 0 ]];then # we should really make a flag for if wget is used...we don't need this if we use lynx
@@ -921,6 +922,8 @@ function DownloadPdf () {
           printf ".h1 Internal Behavior\n.h2 SOURCE_CACHE\nSOURCE_CACHE:FILE\n.h1 External Programs\n.h2 EXTERNAL\nEXTERNAL:http:$GETPAPERPATH --apscaptcha:TRUE" > "$LYNXCFG"
           lynx -accept_all_cookies -cmd_script="$LYNXCMD" -cfg="$LYNXCFG" "$ADSLINK" > /dev/null
         else
+          #cat "$LYNXCMD"
+	  echo "lynx -useragent=\"$AGENT\" -accept_all_cookies -cmd_script=\"$LYNXCMD\" \"$ADSLINK\""
           lynx -useragent="$AGENT" -accept_all_cookies -cmd_script="$LYNXCMD" "$ADSLINK" > /dev/null
         fi
       else
