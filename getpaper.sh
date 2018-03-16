@@ -1,6 +1,6 @@
 #!/bin/bash
 # getpaper
-VERSION=1.51
+VERSION=1.52
 # Copyright 2010-2018  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -122,6 +122,7 @@ cat <<-ENDOFMESSAGE
 getpaper version $VERSION
 Download, add bibtex, query bibtex, strip propaganda, print, and/or open papers based on reference!
 Copyright 2010-2018 daid kahl - www.goatface.org
+This is free software with ABSOLUTELY NO WARRANTY.
 
 Usage: 
   $0: [-h] [-q] [-b] [-f file] [-j journal] [-v volume] [-p page] [-c "comments"] [-P] [-O] [-R [user@host]]
@@ -139,7 +140,7 @@ options:
   --query
   -q 		: query (no downloads nor bibtex modification)
   		  Will inform if the reference is valid, check if you have the bibtex, paper
-		  Can open and/or print if called with those options
+                  Can open and/or print if called with those options
   --bibtex
   -b 		: bibtex only (no downloads)
   --journal <string>
