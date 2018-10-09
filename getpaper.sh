@@ -1,6 +1,6 @@
 #!/bin/bash
 # getpaper
-VERSION=1.52
+VERSION=1.53
 # Copyright 2010-2018  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -36,6 +36,7 @@ VERSION=1.52
 #	give user the bibcode and download location etc nicely at the end
 #	need to suppress output
 #	distinguish save points for multiple-return query.  Can test via getpaper -j pasa -v 25 -p 1 -O
+#							28 Jun 2018 10:39:06 Test getpaper -j apjl -v 857 -p 15  						
 #	recognizes the situation with only bibtex and no download, but does not resolve
 #       Zenity calls need updating: Gtk-Message: GtkDialog mapped without a transient parent. This is discouraged.
 #       Need a check if lynx was built with --enable-externs or APS captcha stuff will blindly crash
@@ -479,7 +480,7 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
       printf "ERROR: Journal code $JOURNAL not in database, skipping...\n"
       Error
       JournalList
-      continue
+      return # continue
       ;;
     esac
 }
@@ -1024,7 +1025,18 @@ function ErrorReport() {
 
 # Confirm downloaded item is in fact a PDF
 function IsPdfValid () { 
+  printf "Checking if downloaded filesize is non-zero...\n"
+  if [ ! -s library/articles/2011/arnps.61.47.pdf ];then
+    printf "Error in downloading the PDF\nMaybe you do not have access\nTerminating...\n"
+    printf "If you confirm the citation information, and the paper is also in ADS, check for a new version of getpaper:\n"
+    printf "\thttps://github.com/goatface/getpaper\n"
+    printf "\t(Many repositories are frequently changing their link structure.)\n"
+    rm -vf $TMP/$FILENAME
+    Error
+    return #continue
+  fi  
   printf "Checking if PDF appears to be valid...\n"
+  pdfinfo $TMP/"$FILENAME"
   if ( pdfinfo $TMP/"$FILENAME" 2>&1 | grep "Error: May not be a PDF file\|Syntax Warning: May not be a PDF file (continuing anyway)\|No such file or directory" > /dev/null );then
     printf "Error in downloading the PDF\nMaybe you do not have access\nTerminating...\n"
     printf "If you confirm the citation information, and the paper is also in ADS, check for a new version of getpaper:\n"
@@ -1175,6 +1187,9 @@ while read inline
 do
   ParseJVP
   SetJournal
+  if [ $ERROR -eq 1 ];then
+    continue
+  fi
   FetchBibtex
   STATUS="$?"
   if [[ $ERROR -eq 1 || $STATUS -eq 1 ]];then 
