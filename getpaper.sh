@@ -1026,7 +1026,7 @@ function ErrorReport() {
 # Confirm downloaded item is in fact a PDF
 function IsPdfValid () { 
   printf "Checking if downloaded filesize is non-zero...\n"
-  if [ ! -s library/articles/2011/arnps.61.47.pdf ];then
+  if [ ! -s $TMP/"$FILENAME" ];then
     printf "Error in downloading the PDF\nMaybe you do not have access\nTerminating...\n"
     printf "If you confirm the citation information, and the paper is also in ADS, check for a new version of getpaper:\n"
     printf "\thttps://github.com/goatface/getpaper\n"
@@ -1036,7 +1036,6 @@ function IsPdfValid () {
     return #continue
   fi  
   printf "Checking if PDF appears to be valid...\n"
-  pdfinfo $TMP/"$FILENAME"
   if ( pdfinfo $TMP/"$FILENAME" 2>&1 | grep "Error: May not be a PDF file\|Syntax Warning: May not be a PDF file (continuing anyway)\|No such file or directory" > /dev/null );then
     printf "Error in downloading the PDF\nMaybe you do not have access\nTerminating...\n"
     printf "If you confirm the citation information, and the paper is also in ADS, check for a new version of getpaper:\n"
