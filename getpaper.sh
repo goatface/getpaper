@@ -1,7 +1,7 @@
 #!/bin/bash
 # getpaper
-VERSION=1.53
-# Copyright 2010-2018  daid kahl
+VERSION=1.54
+# Copyright 2010-2019  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
 #
@@ -40,6 +40,7 @@ VERSION=1.53
 #	recognizes the situation with only bibtex and no download, but does not resolve
 #       Zenity calls need updating: Gtk-Message: GtkDialog mapped without a transient parent. This is discouraged.
 #       Need a check if lynx was built with --enable-externs or APS captcha stuff will blindly crash
+#	getpaper -j epjwc -v 184 -p 01017 -O caused lynx segfault on lynx_cmd usage 03 Nov 2018 13:00:54 
 
 # code from crabat to mimic
 #control_c () { # if we get a Ctrl+C, kill.  If running loop, kill all child run
@@ -868,10 +869,14 @@ function DownloadPdf () {
       BASEURL=`head -n 1 $TMPURL | sed 's/.*X-URL:\ //'|  sed 's,\(http://[^/]*\)/.*,\1,' | sed 's/\r$//'`
       if [ $NATURE -eq 1 ];then
         BASEURL="http://www.nature.com"
-      fi
+        LOCALPDF=`grep -B 1 PDF $TMPURL | head -n 1 | \
+          sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
+            sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//'| sed 's/\r$//' | head -n 1`
+      else
       LOCALPDF=`grep PDF $TMPURL | \
         sed ':a;s/\([^ ]*[Hh][Rr][Ee][Ff].*[^\\]\)[Hh][Rr][Ee][Ff]\(.*\)/\1\2/;ta' | \
           sed  's/.*[Hh][Rr][Ee][Ff]=\"//' | sed 's/\".*//'| sed 's/\r$//' | head -n 1`
+      fi
     fi
     if [ $HREFTYPE -eq 2 ];then
       #totally local href
