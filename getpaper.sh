@@ -1,6 +1,6 @@
 #!/bin/bash
 # getpaper
-VERSION=1.56
+VERSION=1.57
 # Copyright 2010-2019  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -189,7 +189,6 @@ function GetOpts() {
 # basic style from http://stackoverflow.com/questions/17016007/bash-getopts-optional-arguments
 # dislike the builtin getopts
 # TODO: Make all these 0 and change if checks rather than asking if these are empty...what a hack
-  FLAGS="$@"
   bflag=""
   qflag=""
   jflag=""
@@ -218,6 +217,7 @@ function GetOpts() {
     set -- $(printf -- "$DEFAULTOPTS ") "$@"
     echo "Adding default options: $DEFAULTOPTS"
   fi
+  FLAGS="$@"
   while [ $# -gt 0 ]
   do
     opt=$1
