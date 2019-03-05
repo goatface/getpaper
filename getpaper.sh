@@ -72,6 +72,7 @@ function InitVariables () {
 	# If no config file, generate a default one as follows:
 printf "# getpaper config file
 # USER DEFINED VARIABLES
+DEFAULTOPTS=""
 # Program to open PDF files
 PDFVIEWER=/usr/bin/evince 
 #PDFVIEWER=/usr/bin/acroread
@@ -212,6 +213,10 @@ function GetOpts() {
       set -- $(printf -- "$PARSEJVP") "$@"
       echo "Recognized J/V/P format, new command is: $0 $@"                                                                                                                                        
     fi
+  fi
+  if ! [ -z "$DEFAULTOPTS" ];then
+    set -- $(printf -- "$DEFAULTOPTS ") "$@"
+    echo "Adding default options: $DEFAULTOPTS"
   fi
   while [ $# -gt 0 ]
   do
