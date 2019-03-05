@@ -1,6 +1,6 @@
 #!/bin/bash
 # getpaper
-VERSION=1.54
+VERSION=1.55
 # Copyright 2010-2019  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -19,6 +19,7 @@ VERSION=1.54
 # along with getpaper.  If not, see <http://www.gnu.org/licenses/>.
 
 # TODO: 
+#	https://misc.flogisoft.com/bash/tip_colors_and_formatting for color tricks
 #	'file' version only does the first line...not used this in years
 # 	GUI mode is mostly broken since it is not mirroring the methods really
 #	debugging mode (outputs various URLs to STDOUT/ERR, does not put bibtex or paper into library, etc)
@@ -30,7 +31,6 @@ VERSION=1.54
 #	after the apshack, it should tell the user it's submitting the requested link number w/ Einstein and downloading the result
 #	[ -z "$Xflag" ] for unset variables
 #	Oflag or others can be set default as on in the rc?
-#	can understand j v p order w/o flags -j -v -p
 #	redirect lynx stderr because it is annoying to see:
 #		Warning: User-Agent string does not contain "Lynx" or "L_y_n_x"!
 #	give user the bibcode and download location etc nicely at the end
@@ -57,8 +57,8 @@ VERSION=1.54
 
 # Initialize variables
 # Read in or create .getpaperrc
-# concept to check for and create default config file from
-# https://github.com/matt-lowe/ProfanityFE
+# concept to check for and create default config file from:
+#   https://github.com/matt-lowe/ProfanityFE
 function InitVariables () {
 	AGENT="Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.10 Safari/537.36" # 05 Mar 2017 01:00:10 
 	#AGENT="Links (2.8; Linux 3.14.1-gentoo i686; GNU C 4.8.2; text)" # new 08 Feb 2017 15:57:58 
@@ -123,7 +123,7 @@ function Usage()
 cat <<-ENDOFMESSAGE
 getpaper version $VERSION
 Download, add bibtex, query bibtex, strip propaganda, print, and/or open papers based on reference!
-Copyright 2010-2018 daid kahl - www.goatface.org
+Copyright 2010-2019 daid kahl - www.goatface.org
 This is free software with ABSOLUTELY NO WARRANTY.
 
 Usage: 
@@ -162,6 +162,8 @@ options:
   -R <user@host>: Remote download through ssh to <user@host>
   		  <user@host> can be omitted if USER and HOST are defined in .getpaperrc
   (NOTE: -f option supersedes the -j -v -p options.)
+
+  NOTE: -j -v and -p option flags can be omitted consecutively together as the first three options.
   
   Internal options: DO NOT INVOKE DIRECTLY!
   
@@ -201,6 +203,16 @@ function GetOpts() {
   APSflag=""
   RETRYflag=""
   argv=()
+  if [ "$#" -ge 3 ];then
+    if [[ $1 =~ ^[a-Z]+$ &&  $2 =~ ^[0-9]+$ && $3 =~ ^[0-9]+$ ]];then
+      PARSEJVP=$(printf -- "-j $1 -v $2 -p $3")
+      shift
+      shift
+      shift
+      set -- $(printf -- "$PARSEJVP") "$@"
+      echo "Recognized J/V/P format, new command is: $0 $@"                                                                                                                                        
+    fi
+  fi
   while [ $# -gt 0 ]
   do
     opt=$1
@@ -466,7 +478,7 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
     prd | phrvd | PRD )   APS=1;LYNX=1;HREFTYPE=1;JCODE="phrvd";LTYPE="EJOURNAL" ;;
     pre | phrve | PRE )   APS=1;LYNX=1;HREFTYPE=1;JCODE="phrve";LTYPE="EJOURNAL" ;;
     prl | phrvl | PRL )   APS=1;LYNX=1;HREFTYPE=1;JCODE="phrvl";LTYPE="EJOURNAL" ;;
-    phlb | physlb | PhLB )   if [ "$RETRYflag" ];then LYNX=1; fi;  SD=1;HREFTYPE=0;JCODE="phlb";LTYPE="EJOURNAL" ;;
+    phlb | physlb | PhLB | plb | PLB )   if [ "$RETRYflag" ];then LYNX=1; fi;  SD=1;HREFTYPE=0;JCODE="phlb";LTYPE="EJOURNAL" ;;
     prpnp | PrPNP | ppnp | PPNP)  if [ "$RETRYflag" ];then LYNX=1; fi; SD=1;HREFTYPE=0; JCODE="prpnp"; LTYPE="EJOURNAL" ;;
     pthph | PThPh | PTHPH )   HREFTYPE=1;JCODE="pthph";LTYPE="EJOURNAL";LYNX=1 ;;
     pthps | PThPS | PTHPS )   HREFTYPE=1;JCODE="pthps";LTYPE="EJOURNAL" ;;
@@ -574,11 +586,13 @@ function FetchBibtex() {
     echo "Getting BIBCODE from $ADSURL"
     lynx -source "$ADSURL" > $TMPBIBCODE
     BIBCODE=`grep bibcode= $TMPBIBCODE | head -n 1 | sed 's/.*bibcode=//'|sed 's/&.*//'`
+    # TODO why are there two checks on this?
     if [ -z $BIBCODE ];then
-      printf "No BIBCODE could be found!\n"
-      break
+      echo -e "\e[35;1mNo BIBCODE could be found!  ADS did not understand the request.\e[0m"
+      Error
+      return #break
     else
-      printf "BIBCODE is $BIBCODE\n"
+      echo -e "\e[34;1mBIBCODE is $BIBCODE\e[0m"
     fi
     ADSBIBTEX="http://adsabs.harvard.edu/cgi-bin/nph-bib_query?bibcode=$BIBCODE&data_type=BIBTEXPLUS&db_key=ALL&nocookieset=1"
     printf "Fetching bibtex file from ADS ($ADSBIBTEX)\n"
@@ -601,7 +615,7 @@ function FetchBibtex() {
       ZENCMD="$ZENCMD $ZENARG"
       BIBCODE=`echo $ZENCMD | bash`
     else
-      echo "Multiple hits.  Choose the paper you want:"
+      echo -e "\e[34;1mMultiple hits.  Choose the paper you want:\e[0m"
       i=1
       while read line
       do
@@ -623,25 +637,23 @@ function FetchBibtex() {
   fi
   echo "Processing $BIBCODE..."
   if [ -z $BIBCODE ];then
-    printf "No BIBCODE could be found!\n"
+    echo -e "\e[35;1mNo BIBCODE could be found!\e[0m"
     Error
     return #continue
   else
-    echo "$JOURNAL $VOLUME $PAGE is a valid reference"
+    echo -e "\e[34;1m$JOURNAL $VOLUME $PAGE is a valid reference\e[0m"
   fi
   YEAR=`echo "$BIBCODE" | head -c 4`
   if ( grep "$BIBCODE" "$BIBFILE" > /dev/null ); then
-    echo "The article $BIBCODE is in your library!"
+    echo -e "\e[35;1mThe bibtex reference $BIBCODE is already in $BIBFILE!  Skipping...\e[0m"
     if [ ! "$qflag" ];then
-      echo "$BIBFILE"
-      echo "Skipping..."
       # return either a filename or the end of the entry '}' whichever is first
       FILENAME=$(grep -A 50 "$BIBCODE" "$BIBFILE" | grep -i -E -m 1 "File|^}$" | sed 's/.*{://' | sed 's/:PDF.*//')
       if [ "$Oflag" ]; then
       	if ( echo $FILENAME | grep -i "pdf" ); then
       		Open
       	else
-      		echo "Digital version is not in your library or not a pdf...cannot open!"
+      		echo "Digital version is not in your library or not a PDF...cannot open!"
       	fi
       fi
       return 1 # continue
@@ -798,16 +810,15 @@ function APSHack (){
 # Download the paper
 # This is a major work of the script
 # Different databases have different formats
-# Many of them don't like scripting even if it in no way violates the TOS
+# Many of them don't like non-GUI downloading, even if it in no way violates the TOS
 # I apologize for all the cludges and exceptions required for smooth operation
 function DownloadPdf () {
   if [ -e $FILEPATH/$FILENAME ];then
-    echo "The paper is already downloaded!"
+    echo -e "\e[31;1mThe paper is already downloaded!  Skipping...\e[0m"
     echo "$FILEPATH/$FILENAME"
     if [ "$Oflag" ]; then
       Open
     fi
-    echo "Skipping..."
     return 1 #continue
   fi
   ADSLINK="http://adsabs.harvard.edu/cgi-bin/nph-data_query?bibcode=$BIBCODE&link_type=$LTYPE&db_key=ALL"
@@ -977,7 +988,7 @@ function CheckDir () {
 # This is propaganda and not the academic content of interest
 # The function will strip the first page from the PDF file
 function StripPropaganda () { 
-  echo "Stripping propaganda and IP information from pdf file..."
+  echo "Stripping propaganda and IP information from PDF file..."
   cp -v "$TMP/$FILENAME" "$TMP/.getpaper_pdftk_in.pdf"
   pdftk "$TMP/.getpaper_pdftk_in.pdf" cat 2-end output "$TMP/.getpaper_pdftk_out.pdf"
   cp -v "$TMP/.getpaper_pdftk_out.pdf" "$TMP/$FILENAME"
