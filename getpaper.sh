@@ -1,6 +1,6 @@
 #!/bin/bash
 # getpaper
-VERSION=1.55
+VERSION=1.56
 # Copyright 2010-2019  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
