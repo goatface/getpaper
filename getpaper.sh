@@ -1,6 +1,6 @@
 #!/bin/bash
 # getpaper
-VERSION=1.57
+VERSION=1.58
 # Copyright 2010-2019  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -347,6 +347,7 @@ function JournalList() {
   printf "aj\tThe Astronomical Journal\n"
   printf "astl\tAstronomy Letters\n"
   printf "anap\tAnnales d'Astrophysique\n" # none of these are online vi ADS
+  printf "anphy\tAnnals of Physics\n"
   printf "apj\tThe Astrophysical Journal\n"
   printf "apjl\tThe Astrophysical Journal (Letters)\n"
   printf "apjs\tThe Astrophysical Journal (Supplement Series)\n"
@@ -354,6 +355,7 @@ function JournalList() {
   printf "aujph\tAustralian Journal of Physics\n"
   printf "baas\tBulletin of the American Astronomical Society\n"
   printf "bsrsl\tBulletin de la Societe Royale des Sciences de Liege\n"
+  printf "cophr\tComputer Physics Reports\n"
   printf "epja\tEuropean Physical Journal A\n"
   printf "epjas\tEuropean Physical Journal A Supplement\n"
   printf "epjb\tEuropean Physical Journal B\n"
@@ -383,6 +385,7 @@ function JournalList() {
   printf "paphs\tProceedings of the American Philosophical Society\n" # none online via ADS
   printf "pasa\tPublications of the Astronomical Society of Australia\n" # none online via ADS
   printf "pce\tPhysics and Chemsitry of the Earth\n"
+  printf "phr\tPhysics Reports\n"
   printf "phrv\tPhysical Review\n"
   printf "pmag\tPhilosophical Magazine\n"
   printf "ppsa\tProceedings of the Physical Society A\n"
@@ -431,6 +434,7 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
     aa  | AA ) HREFTYPE=1; JCODE="a%26a"; LTYPE="ARTICLE" ;;
     aipc | LYNXC )  LYNX=1; HREFTYPE=1; JCODE="aipc"; LTYPE="EJOURNAL" ; PROPAGANDA=1 ;;
     aj |AJ )  HREFTYPE=1; JCODE="aj"; LTYPE="ARTICLE" ;;
+    anphy | AnPhy | ANPHY | annph | anph )   if [ "$RETRYflag" ];then LYNX=1; fi;  SD=1;HREFTYPE=0;JCODE="anphy";LTYPE="EJOURNAL" ;;
     astl | AstL )  HREFTYPE=1; JCODE="astl"; LTYPE="EJOURNAL" ;;
     anap |AnAp )  HREFTYPE=1; JCODE="anap"; LTYPE="ARTICLE" ;;
     apj |APJ )  HREFTYPE=1; JCODE="apj"; LTYPE="ARTICLE" ;;
@@ -441,6 +445,7 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
     baas | BAAS  )   HREFTYPE=1; JCODE="baas"; LTYPE="ARTICLE" ;;
     bsrsl | BSRSL  )   HREFTYPE=2; JCODE="bsrsl"; LTYPE="EJOURNAL" ;;
     cajph | CAJPH | CaJPh ) LYNX=1; HREFTYPE=1; JCODE="cajph"; LTYPE="EJOURNAL" ;;
+    cophr | CoPhR | COPHR  )   if [ "$RETRYflag" ];then LYNX=1; fi;  SD=1;HREFTYPE=0;JCODE="cophr";LTYPE="EJOURNAL" ;;
     epja | EPJA )  LYNX=1;HREFTYPE=1; JCODE="epja"; LTYPE="EJOURNAL" ;;
     epjas | EPJAS )  LYNX=1;HREFTYPE=1; JCODE="epjas"; LTYPE="EJOURNAL" ;;
     epjb | EPJB )  LYNX=1;HREFTYPE=1; JCODE="epjb"; LTYPE="EJOURNAL" ;;
@@ -472,6 +477,7 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
     pasj | PASJ )   HREFTYPE=1; JCODE="pasj"; LTYPE="ARTICLE" ;;
     pasp | PASP )   HREFTYPE=1; JCODE="pasp"; LTYPE="ARTICLE" ;;
     pce | PCE )  if [ "$RETRYflag" ];then LYNX=1; fi; SD=1;HREFTYPE=0; JCODE="pce"; LTYPE="EJOURNAL" ;;
+    phr | PhR | PHR )   if [ "$RETRYflag" ];then LYNX=1; fi;  SD=1;HREFTYPE=0;JCODE="phr";LTYPE="EJOURNAL" ;;
     phrv | pr | PhRv | PHRV )   APS=1;LYNX=1; HREFTYPE=1; JCODE="phrv"; LTYPE="EJOURNAL" ;;
     pmag | PMag | PMAG )   HREFTYPE=1; JCODE="pmag"; LTYPE="EJOURNAL" ;;
     ppsa | PPSA  )   HREFTYPE=1; JCODE="ppsa"; LTYPE="EJOURNAL" ;;
@@ -1074,6 +1080,7 @@ function GUI () {
     FALSE aa "Astronomy & Astrophysics" \
     FALSE aipc "American Institute of Physics (Conference Proceedings)" \
     FALSE aj "The Astronomical Journal" \
+    FALSE anphy "Annals of Physics" \
     FALSE astl "Astronomy Letters" \
     FALSE anap "Annales d Astrophysique" \
     FALSE apj "The Astrophysical Journal" \
@@ -1083,6 +1090,7 @@ function GUI () {
     FALSE aujph "Australian Journal of Physics" \
     FALSE baas "Bulletin of the American Astronomical Society" \
     FALSE bsrsl "Bulletin de la Societe Royale des Sciences de Liege" \
+    FALSE cophr "Computer Physics Reports" \
     FALSE epja "European Physical Journal A" \
     FALSE epjas "European Physical Journal A Supplement" \
     FALSE epjb "European Physical Journal B" \
@@ -1113,6 +1121,7 @@ function GUI () {
     FALSE pasa "Publications of the Astronomical Society of Australia" \
     FALSE pasj "Publications of the Astronomical Society of Japan" \
     FALSE pasp "Publications of the Astronomical Society of the Pacific" \
+    FALSE phr "Physics Reports" \
     FALSE phrv "Physical Review" \
     FALSE pce "Physics and Chemistry of the Earth" \
     FALSE pmag "Philosophical Magazine" \
