@@ -1,6 +1,6 @@
 #!/bin/bash
 # getpaper
-VERSION=1.58
+VERSION=1.59
 # Copyright 2010-2019  daid kahl
 #
 # (http://www.goatface.org/hack/getpaper.html)
@@ -215,7 +215,7 @@ function GetOpts() {
   fi
   if ! [ -z "$DEFAULTOPTS" ];then
     set -- $(printf -- "$DEFAULTOPTS ") "$@"
-    echo "Adding default options: $DEFAULTOPTS"
+    echo "Adding default option(s): $DEFAULTOPTS"
   fi
   FLAGS="$@"
   while [ $# -gt 0 ]
@@ -659,7 +659,7 @@ function FetchBibtex() {
     echo -e "\e[35;1mThe bibtex reference $BIBCODE is already in $BIBFILE!  Skipping...\e[0m"
     if [ ! "$qflag" ];then
       # return either a filename or the end of the entry '}' whichever is first
-      FILENAME=$(grep -A 50 "$BIBCODE" "$BIBFILE" | grep -i -E -m 1 "File|^}$" | sed 's/.*{://' | sed 's/:PDF.*//')
+      FILENAME=$(grep -A 50 "@.*$BIBCODE" "$BIBFILE" | grep -i -E -m 1 "File|^}$" | sed 's/.*{://' | sed 's/:PDF.*//')
       if [ "$Oflag" ]; then
       	if ( echo $FILENAME | grep -i "pdf" ); then
       		Open
