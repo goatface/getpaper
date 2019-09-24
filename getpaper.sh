@@ -19,6 +19,7 @@ VERSION=1.59
 # along with getpaper.  If not, see <http://www.gnu.org/licenses/>.
 
 # TODO: 
+#       "debugging mode" (doesn't do cleanup)
 #	https://misc.flogisoft.com/bash/tip_colors_and_formatting for color tricks
 #	'file' version only does the first line...not used this in years
 # 	GUI mode is mostly broken since it is not mirroring the methods really
@@ -343,6 +344,7 @@ function Error () {
 function JournalList() {
   printf "Journals in database:\nCODE\tNAME\n"
   printf "aa\tAstronomy & Astrophysics\n"
+  printf "aipa\tAmerican Institute of Physics Advances\n"
   printf "aipc\tAmerican Institute of Physics (Conference Proceedings)\n"
   printf "aj\tThe Astronomical Journal\n"
   printf "astl\tAstronomy Letters\n"
@@ -427,11 +429,12 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
   SD= 
   PROPAGANDA=0 
   NATURE=0 
-  FALSEPAGE=("jphg" "jphcs") # journals where the first two pages need to be stripped sometimes
+  FALSEPAGE=("jphg" "jphcs" "aipa") # journals where the first two pages need to be stripped sometimes
   FALSEPAGE=$(echo ${FALSEPAGE[@]}|tr " " "|")
   # TODO: Make less of a nightmare.  External config file?!?
   case "$JOURNAL" in
     aa  | AA ) HREFTYPE=1; JCODE="a%26a"; LTYPE="ARTICLE" ;;
+    aipa | AIPA )  LYNX=1; HREFTYPE=1; JCODE="aipa"; LTYPE="EJOURNAL" ; PROPAGANDA=1 ;;
     aipc | LYNXC )  LYNX=1; HREFTYPE=1; JCODE="aipc"; LTYPE="EJOURNAL" ; PROPAGANDA=1 ;;
     aj |AJ )  HREFTYPE=1; JCODE="aj"; LTYPE="ARTICLE" ;;
     anphy | AnPhy | ANPHY | annph | anph )   if [ "$RETRYflag" ];then LYNX=1; fi;  SD=1;HREFTYPE=0;JCODE="anphy";LTYPE="EJOURNAL" ;;
@@ -462,7 +465,7 @@ function SetJournal() {	# JOURNAL DEFINITIONS -- may want to improve this list, 
     mnras | MNRAS ) HREFTYPE=1; JCODE="mnras"; LTYPE="ARTICLE" ;;
     msrsl | MSRSL  )   HREFTYPE=1; JCODE="msrsl"; LTYPE="ARTICLE" ;;
     metro | Metro )  HREFTYPE=1; JCODE="metro"; LTYPE="EJOURNAL" ;;
-    natur | nature | Nature | Natur ) NATURE=1; HREFTYPE=1; JCODE="natur"; LTYPE="EJOURNAL" ;;
+    natur | nature | Nature | Natur ) LYNX=1; NATURE=1; HREFTYPE=1; JCODE="natur"; LTYPE="EJOURNAL" ;;
     natph | NatPh )  LYNX=1; HREFTYPE=1; JCODE="natph"; LTYPE="EJOURNAL" ;;
     newar | NewAR | NEWAR )   if [ "$RETRYflag" ];then LYNX=1; fi;  SD=1;HREFTYPE=0;JCODE="newar";LTYPE="EJOURNAL" ;;
     nim | nucim | NIM | NucIM)  if [ "$RETRYflag" ];then LYNX=1; fi; SD=1 ;HREFTYPE=0; JCODE="nucim"; LTYPE="EJOURNAL" ;;
@@ -697,6 +700,9 @@ function MakeLynxCmd () {
   echo "key D" >> "$LYNXCMD"  
   echo "key F" >> "$LYNXCMD"  
   echo "key ^J" >> "$LYNXCMD" 
+  if [[ $NATURE -eq 1 ]];then # is this only for cases with Supplementary Material, or is it normally the second hit?
+    echo "key n" >> "$LYNXCMD"
+  fi
   if [[ $SD -eq 1 ]];then
     echo "key ^J" >> "$LYNXCMD"
   fi
@@ -910,6 +916,7 @@ function DownloadPdf () {
     FULLPATH="$BASEURL$LOCALPDF"
   fi
   # TODO: if not lynx, do this.  if lynx, let them know we are using lynx on some URL and please wait
+  # TODO: /home/daid/scripts/getpaper: line 919: printf: `B': invalid format character
   printf "Downloading PDF from $FULLPATH ...\n"
   if [ $GUI -eq 1 ];then
     if [ "$Rflag" ];then # Remote flag is on
@@ -1078,6 +1085,7 @@ function IsPdfValid () {
 function GUI () {
   jval=$(zenity  --width=400  --height=703 --title "getpaper" --list  --text "Choose a journal" --radiolist  --column "" --column "Code" --column "Publication Title"  \
     FALSE aa "Astronomy & Astrophysics" \
+    FALSE aipa "American Institute of Physics Advances" \
     FALSE aipc "American Institute of Physics (Conference Proceedings)" \
     FALSE aj "The Astronomical Journal" \
     FALSE anphy "Annals of Physics" \
