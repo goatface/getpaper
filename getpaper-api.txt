@@ -1,0 +1,65 @@
+New notes for the new ADS, including API access
+
+To make an account and get an authorization key, see https://github.com/adsabs/adsabs-dev-api
+
+Now my token is RRRRRRR#rRRRRR###########3#########R###R# (redacted)
+
+It suggests to access like
+  curl -H 'Authorization: Bearer:RRRRRRR#rRRRRR###########3#########R###R#' 'https://api.adsabs.harvard.edu/v1/search/query?q=star&fl=bibcode'
+
+Now to get a line for resolving bibcode
+
+In the old getpaper using the classic ADS, getpaper's ADSURL looks like
+
+  http://adsabs.harvard.edu/cgi-bin/nph-abs_connect?version=1&warnings=YES&partial_bibcd=YES&sort=BIBCODE&db_key=ALL&bibstem=$JCODE&volume=$VOLUME&page=$PAGE&nr_to_return=1&start
+
+Here I made a search on the new ADS UI for ApJ 878 156
+
+  https://ui.adsabs.harvard.edu/search/q=bibstem%3AApJ%20volume%3A878%20page%3A156&sort=date%20desc%2C%20bibcode%20desc&p_=0
+
+  Let's disect this.
+  %3A is colon ':'
+  %20 is space ' '
+
+Now I try to mash this together
+
+curl -H 'Authorization: Bearer:RRRRRRR#rRRRRR###########3#########R###R#' 'https://api.adsabs.harvard.edu/v1/search/query?q=bibstem%3AApJ%20volume%3A878%20page%3A156&sort=date%20desc%2C%20bibcode%20desc&p_=0'
+
+With a little modification, I can grab the bibcode:
+
+=BIBCODE WORKS=
+
+daid@nightmare /tmp/getpaper-api % curl -H 'Authorization: Bearer:RRRRRRR#rRRRRR###########3#########R###R#' 'https://api.adsabs.harvard.edu/v1/search/query?q=bibstem%3AApJ%20volume%3A878%20page%3A156&fl=bibcode'                               
+{"responseHeader":{"status":0,"QTime":14,"params":{"q":"bibstem:ApJ volume:878 page:156","x-amzn-trace-id":"Root=1-5d88e1d2-14f66b5c57ade7700e2fa690","fl":"bibcode","start":"0","rows":"10","wt":"json"}},"response":{"numFound":1,"start":0,"docs":[{"bibcode":"2019ApJ...878..156C"}]}}
+
+Nominally (from memory) I am fetching the bibcode, then the bibtex file, the abstract, and eventually the URL for the publisher's link to the paper.
+  I should be careful for the rate limits to fetch in one go rather than 4 unique calls, since the number of queries are limited to 5000 a day
+
+Not clear how to get multiple returns, but here is one for the abstract
+
+=ABSTRACT WORKS=
+
+daid@nightmare /tmp/getpaper-api % curl -H 'Authorization: Bearer:RRRRRRR#rRRRRR###########3#########R###R#' 'https://api.adsabs.harvard.edu/v1/search/query?q=bibstem%3AApJ%20volume%3A878%20page%3A156&fl=abstract'
+{"responseHeader":{"status":0,"QTime":3,"params":{"q":"bibstem:ApJ volume:878 page:156","x-amzn-trace-id":"Root=1-5d8a1b3c-54dd8d1058559a5483e42758","fl":"abstract","start":"0","rows":"10","wt":"json"}},"response":{"numFound":1,"start":0,"docs":[{"abstract":"The presence of short-lived (∼Myr) radioactive isotopes in meteoritic inclusions at the time of their formation represents a unique opportunity to study the circumstances that led to the formation of the solar system. To interpret these observations, we need to calculate the evolution of radioactive-to-stable isotopic ratios in the Galaxy. We present an extension of the open-source galactic chemical evolution codes NuPyCEE and JINAPyCEE that enable the decay of radioactive isotopes in the interstellar medium to be tracked. We show how the evolution of the isotopic ratio depends on the star formation history and efficiency, star-to-gas mass ratio, and galactic outflows. Given the uncertainties in the observations used to calibrate our model, our predictions for isotopic ratios at the time of formation of the Sun are uncertain by a factor of 3.6. At that time, to recover the actual radioactive-to-stable isotopic ratios predicted by our model, one can multiply the steady-state solution (see Equation (1)) by {2.3}<SUB>-0.7</SUB><SUP>+3.4</SUP>. However, in the cases where the radioactive isotope has a half-life longer than ∼200 Myr, or the target radioactive or stable isotopes have mass- and/or metallicity-dependent production rates, or they originate from different sources with different delay-time distributions, or the reference isotope is radioactive, our codes should be used for more accurate solutions. Our preliminary calculations confirm the dichotomy between radioactive nuclei in the early solar system with r- and s-process origin, and that <SUP>55</SUP>Mn and <SUP>60</SUP>Fe can be explained by galactic chemical evolution, while <SUP>26</SUP>Al cannot."}]}}
+
+
+=BIBTEX WORKS=
+
+curl -H "Authorization: Bearer RRRRRRR#rRRRRR###########3#########R###R#" -H "Content-Type: application/json" -X POST -d '{"bibcode":["2019ApJ...878..156C"]}' https://api.adsabs.harvard.edu/v1/export/bibtex
+{"msg": "Retrieved 1 abstracts, starting with number 1.", "export": "@ARTICLE{2019ApJ...878..156C,\n       author = {{C{\\^o}t{\\'e}}, Benoit and {Lugaro}, Maria and {Reifarth}, Rene and\n         {Pignatari}, Marco and {Vil{\\'a}gos}, Blanka and\n         {Yag{\\\"u}e}, Andr{\\'e}s and {Gibson}, Brad K.},\n        title = \"{Galactic Chemical Evolution of Radioactive Isotopes}\",\n      journal = {\\apj},\n     keywords = {Galaxy: abundances, ISM: abundances, meteorites, meteors, meteoroids, planets and satellites: formation, Astrophysics - Astrophysics of Galaxies},\n         year = \"2019\",\n        month = \"Jun\",\n       volume = {878},\n       number = {2},\n          eid = {156},\n        pages = {156},\n          doi = {10.3847/1538-4357/ab21d1},\narchivePrefix = {arXiv},\n       eprint = {1905.07828},\n primaryClass = {astro-ph.GA},\n       adsurl = {https://ui.adsabs.harvard.edu/abs/2019ApJ...878..156C},\n      adsnote = {Provided by the SAO/NASA Astrophysics Data System}\n}\n\n"}%  
+
+=ABSTRACT AND BIBTEX TOGETHER WORKS=
+
+daid@nightmare /tmp/getpaper-api % curl -H "Authorization: Bearer RRRRRRR#rRRRRR###########3#########R###R#" -H "Content-Type: application/json" -X POST -d '{"bibcode":["2019ApJ...878..156C"]}' https://api.adsabs.harvard.edu/v1/export/bibtexabs 
+{"msg": "Retrieved 1 abstracts, starting with number 1.", "export": "@ARTICLE{2019ApJ...878..156C,\n       author = {{C{\\^o}t{\\'e}}, Benoit and {Lugaro}, Maria and {Reifarth}, Rene and\n         {Pignatari}, Marco and {Vil{\\'a}gos}, Blanka and\n         {Yag{\\\"u}e}, Andr{\\'e}s and {Gibson}, Brad K.},\n        title = \"{Galactic Chemical Evolution of Radioactive Isotopes}\",\n      journal = {\\apj},\n     keywords = {Galaxy: abundances, ISM: abundances, meteorites, meteors, meteoroids, planets and satellites: formation, Astrophysics - Astrophysics of Galaxies},\n         year = \"2019\",\n        month = \"Jun\",\n       volume = {878},\n       number = {2},\n          eid = {156},\n        pages = {156},\n     abstract = \"{The presence of short-lived ({\\ensuremath{\\sim}}Myr) radioactive\n        isotopes in meteoritic inclusions at the time of their formation\n        represents a unique opportunity to study the circumstances that\n        led to the formation of the solar system. To interpret these\n        observations, we need to calculate the evolution of radioactive-\n        to-stable isotopic ratios in the Galaxy. We present an extension\n        of the open-source galactic chemical evolution codes NuPyCEE and\n        JINAPyCEE that enable the decay of radioactive isotopes in the\n        interstellar medium to be tracked. We show how the evolution of\n        the isotopic ratio depends on the star formation history and\n        efficiency, star-to-gas mass ratio, and galactic outflows. Given\n        the uncertainties in the observations used to calibrate our\n        model, our predictions for isotopic ratios at the time of\n        formation of the Sun are uncertain by a factor of 3.6. At that\n        time, to recover the actual radioactive-to-stable isotopic\n        ratios predicted by our model, one can multiply the steady-state\n        solution (see Equation (1)) by \\{2.3\\}$_{-0.7}$$^{+3.4}$.\n        However, in the cases where the radioactive isotope has a half-\n        life longer than {\\ensuremath{\\sim}}200 Myr, or the target\n        radioactive or stable isotopes have mass- and/or metallicity-\n        dependent production rates, or they originate from different\n        sources with different delay-time distributions, or the\n        reference isotope is radioactive, our codes should be used for\n        more accurate solutions. Our preliminary calculations confirm\n        the dichotomy between radioactive nuclei in the early solar\n        system with r- and s-process origin, and that $^{55}$Mn and\n        $^{60}$Fe can be explained by galactic chemical evolution, while\n        $^{26}$Al cannot.}\",\n          doi = {10.3847/1538-4357/ab21d1},\narchivePrefix = {arXiv},\n       eprint = {1905.07828},\n primaryClass = {astro-ph.GA},\n       adsurl = {https://ui.adsabs.harvard.edu/abs/2019ApJ...878..156C},\n      adsnote = {Provided by the SAO/NASA Astrophysics Data System}\n}\n\n"}% 
+
+
+And now we need the link ... !
+
+=PUBLISHER PDF LINK=
+
+daid@nightmare /tmp/getpaper-api % curl -X GET https://ui.adsabs.harvard.edu/link_gateway/2019ApJ...878..156C/pub_pdf
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<title>Redirecting...</title>
+<h1>Redirecting...</h1>
+<p>You should be redirected automatically to target URL: <a href="http://stacks.iop.org/0004-637X/878/156/pdf">http://stacks.iop.org/0004-637X/878/156/pdf</a>.  If not click the link.%    

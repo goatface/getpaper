@@ -1,9 +1,9 @@
 #!/bin/bash
 # getpaper
 VERSION=1.59
-# Copyright 2010-2019  daid kahl
+# Copyright 2010-2022 daid kahl
 #
-# (http://www.goatface.org/hack/getpaper.html)
+# (https://github.com/goatface/getpaper)
 #
 # getpaper is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@ VERSION=1.59
 # along with getpaper.  If not, see <http://www.gnu.org/licenses/>.
 
 # TODO: 
-#       "debugging mode" (doesn't do cleanup)
+#       Expand debugging mode for more verbosity
 #	https://misc.flogisoft.com/bash/tip_colors_and_formatting for color tricks
 #	'file' version only does the first line...not used this in years
 # 	GUI mode is mostly broken since it is not mirroring the methods really
@@ -157,6 +157,8 @@ options:
   --comment
   -c "<string>": <string> is any comments, in quotes, including spaces
   --print
+  -D		: Debug mode (increased verbosity, no tmp cleanup)
+  --debug
   -P 		: Printing is turned on
   --open
   -O 		: Open the paper(s) for digital viewing
@@ -198,6 +200,7 @@ function GetOpts() {
   cflag=""
   fflag=""
   bflag=""
+  Dflag=""
   Pflag=""
   Oflag=""
   Rflag=""
@@ -229,6 +232,9 @@ function GetOpts() {
         ;;
       -q|--query)
       qflag=1
+        ;;
+      -D|--debug)
+      Dflag=1
         ;;
       -P|--print)
       Pflag=1
@@ -856,8 +862,14 @@ function DownloadPdf () {
     # holy fuck I hate SD sOooOooOooooooooOOOOOOO much 13 Jan 2016 15:13:17 
     if   [ "$SD" ];then
       # SD tries again to use javascript redirect which borks lynx..eat this hack you fucksi
-      ADSLINK=$(grep 'name="redirectURL"' $TMPURL | sed 's/.*value="//' | sed 's/".*//' | sed 's$%3A$:$g' | sed 's$%2F$/$g'| sed 's$%3F.*$$')
+      if [ "$Dflag" ]; then
+        echo "ADSLINK: $ADSLINK"
+      fi
       echo "Rebasing $TMPURL for SD JavaScript redirect..."
+      ADSLINK=$(grep 'name="redirectURL"' $TMPURL | sed 's/.*value="//' | sed 's/".*//' | sed 's$%3A$:$g' | sed 's$%2F$/$g'| sed 's$%3F.*$$')
+      if [ "$Dflag" ]; then
+        echo "ADSLINK: $ADSLINK"
+      fi
       lynx -source -connect_timeout=20 -useragent="$AGENT" "$ADSLINK" > $TMPURL
     fi
     if [[ $HREFTYPE -eq 0 ]];then
@@ -886,10 +898,16 @@ function DownloadPdf () {
         #hacks
           LOCALPDF="www.sciencedirect.com""$LOCALPDF"
         fi
-        echo "Rebasing $LOCALPDF for SD JavaScript redirect..."
+        if [ "$Dflag" ]; then
+          echo "LOCALPDF: $LOCALPDF"
+        fi
         lynx -source -connect_timeout=20 -useragent="$AGENT" "$LOCALPDF" > $TMPURL
+        echo "Rebasing $LOCALPDF for SD JavaScript redirect..."
 	LOCALPDF=$(grep "Please wait" $TMPURL | sed 's/.*href=//' | sed 's/>here.*//' | sed 's/"//g')
 	#LOCALPDF=$(grep "Refresh" $TMPURL | sed 's/.*URL=//' | sed 's/".*//')
+        if [ "$Dflag" ]; then
+          echo "LOCALPDF: $LOCALPDF"
+        fi
       fi
     fi
     if [[ $HREFTYPE -eq 1 && $LYNX -eq 0 ]];then # we should really make a flag for if wget is used...we don't need this if we use lynx
@@ -1286,4 +1304,6 @@ do
   fi
 done < "$INPUT"
 ErrorReport
-TmpCleanUp
+if [ -z $Dflag ];then
+  TmpCleanUp
+fi
