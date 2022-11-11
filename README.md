@@ -1,5 +1,7 @@
 # getpaper
 
+Note that until changes are made for the new API, `getpaper` needs a rehaul.  See the text file.
+
 ## Functionality
 
 Download, add bibtex, query bibtex, strip propaganda, print, and/or open papers based on reference!
